@@ -44,63 +44,62 @@
 </aside>
 
 
-
-    <!--Parte de pesquisa-->
-<section class="container-fluid "">   
-    <div class="container text-center">
-        <!--Divisão em colunas para garantir que a barra prenche o espaço do lado direito todo.(Quanto mais div class= col maior o número de divisoes da página)-->
-        <div class="row align-items-start">
-            <div class = "col">
-                <form class = "search_box" action="/search" method="get">
-                    <input type="search" name="Pesquisa" placeholder="Search.. ">
-                </form>
+<main>
+        <!--Parte de pesquisa-->
+    <section class="container-fluid ">   
+        <div class="container text-center">
+            <!--Divisão em colunas para garantir que a barra prenche o espaço do lado direito todo.(Quanto mais div class= col maior o número de divisoes da página)-->
+            <div class="row align-items-start">
+                <div class = "col">
+                    <form class = "search_box" action="/search" method="get">
+                        <input type="search" name="Pesquisa" placeholder="Search.. ">
+                    </form>
+                </div>
+                <div class="col">
+                </div> 
             </div>
-            <div class="col">
-            </div> 
         </div>
-    </div>
-    
-    
-    <!--Filtros-->
-    <div class="container text-center">
-        <!--Divisão em 3 partes(col)-->
-        <div class="row align-items-start">
-            <div class="col">
-                <!--Bootstrap Dropdowns-->
-                <nav class="navbar navbar-expand-lg ">
-                    <div class="collapse navbar-collapse">
-                        <ul class="navbar-nav">
-                            <li class="nav-item dropdown">
-                                <button class="btn  dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                Tipo
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-dark">
-                                    <li><a class="dropdown-item" href="#">Action</a></li>
-                                    <li><a class="dropdown-item" href="#">Another action</a></li>
-                                    <li><a class="dropdown-item" href="#">Something else here</a></li>
-                                </ul>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <button class="btn  dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                Modificado
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-dark">
-                                    <li><a class="dropdown-item" href="#">Action</a></li>
-                                    <li><a class="dropdown-item" href="#">Another action</a></li>
-                                    <li><a class="dropdown-item" href="#">Something else here</a></li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </div>
-                </nav>
-            </div>
-            <div class="col"></div>
-            <div class="col"></div>
-        </div>
-    </div>
-</section>
 
-<main class="container_completo">
+
+        <!--Filtros-->
+        <div class="container text-center">
+            <!--Divisão em 3 partes(col)-->
+            <div class="row align-items-start">
+                <div class="col">
+                    <!--Bootstrap Dropdowns-->
+                    <nav class="navbar navbar-expand-lg ">
+                        <div class="collapse navbar-collapse">
+                            <ul class="navbar-nav">
+                                <li class="nav-item dropdown">
+                                    <button class="btn  dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Tipo
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-dark">
+                                        <li><a class="dropdown-item" href="#">Action</a></li>
+                                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                    </ul>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <button class="btn  dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Modificado
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-dark">
+                                        <li><a class="dropdown-item" href="#">Action</a></li>
+                                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+                <div class="col"></div>
+                <div class="col"></div>
+            </div>
+        </div>
+    </section>
+    <section class="container_completo">
     <div class="row">
         <div class = "col">
             <div class="caixa">
@@ -115,7 +114,11 @@
         <div class = "col"></div>
         <div class = "col"></div>
     </div>
+</section>
+
 </main>
+
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
