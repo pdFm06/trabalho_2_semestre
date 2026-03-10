@@ -1,0 +1,41 @@
+# Containers que vamos usar
+# É necessario ter o nome do container, a imagem que vamos usar, e as variaveis de ambiente.
+services: 
+  db:
+    #imagem que vem do dockerhub
+    image: postgres:16
+    #variaveis de ambiente para configurar o postgres
+    environment:
+      POSTGRES_DB: user_info
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    #volume que vai persistir os dados do postgres mesmo que o container seja apagado
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    #portas : pc : container
+    ports:
+      - "5433:5432"
+
+  #interface gráfica para o postgres
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: tiagofssousa5@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: password
+    ports:
+      - "5080:80"
+    #dependencia para o postgres, ou seja, o pgadmin só vai iniciar depois do postgres iniciar
+    depends_on:
+      - db
+
+
+  frontend:
+    #vai até a pasta /frontend buscar o docker file para criar a imagem
+    build: ./frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/public:/usr/share/nginx/html
+
+volumes:
+  postgres_data:
