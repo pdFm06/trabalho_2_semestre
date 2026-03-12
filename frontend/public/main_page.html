@@ -45,12 +45,12 @@
 
 
 <main>
-        <!--Parte de pesquisa-->
-    <section class="container-fluid ">   
-        <div class="container text-center">
+     <!--Parte de pesquisa-->
+    <section class="container_search">   
+        <div class="search_box">
             <!--Divisão em colunas para garantir que a barra prenche o espaço do lado direito todo.(Quanto mais div class= col maior o número de divisoes da página)-->
             <div class="row align-items-start">
-                <div class = "col">
+                <div class = "col-md-6">
                     <form class = "search_box" action="/search" method="get">
                         <input type="search" name="Pesquisa" placeholder="Search.. ">
                     </form>
@@ -62,7 +62,7 @@
 
 
         <!--Filtros-->
-        <div class="container text-center">
+        <div class="container_filters">
             <!--Divisão em 3 partes(col)-->
             <div class="row align-items-start">
                 <div class="col">
@@ -94,28 +94,27 @@
                         </div>
                     </nav>
                 </div>
-                <div class="col"></div>
-                <div class="col"></div>
+                <div class="col-md-6"></div>
+                <div class="col-md-6"></div>
             </div>
         </div>
     </section>
-    <section class="container_completo">
-    <div class="row">
-        <div class = "col">
-            <div class="caixa">
-                <div class="nome_ficheiro">
-                   <p>😂 Jarvis Clip That</p>
+    
+    <section class="container_main">
+        <div class="row">
+            <div class = "col-md-2">
+                <div class="caixa">
+                    <div class="nome_ficheiro">
+                       <p>😂 Jarvis Clip That</p>
+                    </div>
+                    <img class ="img_ficheiro" src="../public/img/main_page/download.png" alt="">
                 </div>
-                <img class ="img_ficheiro" src="../public/img/main_page/download.png" alt="">
             </div>
+            <div class = "col-md-2"></div>
+            <div class = "col-md-2"></div>
+            <div class = "col-md-2"></div>
         </div>
-        <div class = "col"></div>
-        <div class = "col"></div>
-        <div class = "col"></div>
-        <div class = "col"></div>
-    </div>
-</section>
-
+    </section>
 </main>
 
 

@@ -43,10 +43,6 @@
 }
 
 /* Menu */
-main {
-    margin-left: 300px;
-}
-
 .menu{
     list-style:none;
     padding-left: 0;
@@ -97,6 +93,21 @@ main {
 
 /* Main Page */
 
+main {
+    margin-left: 300px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.container_search{
+    width: 100%;
+    margin-top: 30px;
+    padding-left: 12px;
+    padding-right: 12px;
+    box-sizing: border-box;
+}
+
+
 .search_box input{
     width:100%;
     padding:10px;
@@ -105,15 +116,15 @@ main {
     margin-top: 50px;
 }
 
-
-.container_completo{
-    width: 80%;
-    padding-right: 12px;
+.container_main{
+    width: 100%;
+    margin-top: 30px;
     padding-left: 12px;
-    margin-top:30px ;
+    padding-right: 12px;
+    box-sizing: border-box;
 }
 
-.container_completo .caixa{
+.container_main .caixa{ 
     width: 100%;
     height: 100%;
     box-shadow: 0px 10px 13px -7px #000000;
