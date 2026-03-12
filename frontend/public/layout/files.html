@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drive</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/index.css">
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <a class="logo" href="#"><img src="../img/Logo.png" height="50"></a>
+
+        <ul class="menu">
+            <li><a href="#"><img class="imagem_side_bar" src="../img/home_page/home.png" alt="Ícone de Início"> Início</a></li>
+            <li><a href="#"><img class="imagem_side_bar" src="../img/home_page/hdd.png" alt="Ícone de Cloud">Drive</a></li>
+            <li><a href="#"><img class="imagem_side_bar" src="../img/home_page/clock.png" alt="Ícone de Recentemente">Recente</a></li>
+            <li><a href="#"><img class="imagem_side_bar" src="../img/home_page/star.png" alt="Ícone de Importante">Importante</a></li>
+            <li><a href="#"><img class="imagem_side_bar" src="../img/home_page/trash.png" alt="Ícone de Lixo">Lixo</a></li>
+            <li><a href="#"><img class="imagem_side_bar" src="../img/home_page/settings.png" alt="Ícone de Definições">Definições</a></li>
+            <hr class="separador_side">
+            <li><a href="#"><img class="imagem_side_bar" src="../img/home_page/cloud.png" alt="Ícone de Cloud">Espaço</a></li>
+            <li>
+                <div class="container">
+                    <div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
+                        <div class="barra_espaco progress-bar w-75"></div>
+                    </div>
+                </div>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Conteúdo principal -->
+    <main class="main-content">
+        <!-- Topo -->
+        <section class="top-bar">
+            <div class="suggested-button">
+                <span class="arrow">⌄</span>
+                <span>Suggested files</span>
+            </div>
+
+            <div class="view-controls">
+                <button id="btn-list" class="view-btn active">☰</button>
+                <button id="btn-grid" class="view-btn">▦</button>
+            </div>
+        </section>
+
+        <!-- Lista/Grid -->
+        <section class="files-section">
+            <div id="filesContainer" class="files-list">
+
+                <div class="file-row">
+                    <div class="file-name">
+                        <img src="../img/main_page/pdf.png" alt="Documento">
+                        <span class="file-title">Ficheiro 1.pdf</span>
+                    </div>
+
+                    <div class="file-date">
+                        You opened · Nov 25, 2025
+                    </div>
+
+                    <div class="file-location">
+                        My Drive
+                    </div>
+
+                    <div class="file-menu-container">
+                        <div class="file-menu">⋮</div>
+
+                        <div class="menu-dropdown">
+                            <div class="menu-item">Excluir</div>
+                            <div class="menu-item">Transferir</div>
+                            <div class="menu-item">Partilhar</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="file-row">
+                    <div class="file-name">
+                        <img src="../img/main_page/video.png" alt="Vídeo">
+                        <span class="file-title">video.mp4</span>
+                    </div>
+
+                    <div class="file-date">
+                        You opened · Oct 17, 2024
+                    </div>
+
+                    <div class="file-location">
+                        Shared with me
+                    </div>
+
+                    <div class="file-menu-container">
+                        <div class="file-menu">⋮</div>
+
+                        <div class="menu-dropdown">
+                            <div class="menu-item">Excluir</div>
+                            <div class="menu-item">Transferir</div>
+                            <div class="menu-item">Partilhar</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="view-more">
+                <a href="#">View more</a>
+            </div>
+        </section>
+    </main>
+    <script src="layout.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
+
+
+    
