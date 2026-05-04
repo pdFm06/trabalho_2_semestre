@@ -1,22 +1,15 @@
-# Containers que vamos usar
-# É necessario ter o nome do container, a imagem que vamos usar, e as variaveis de ambiente.
 services: 
   db:
-    #imagem que vem do dockerhub
     image: postgres:16
-    #variaveis de ambiente para configurar o postgres
     environment:
       POSTGRES_DB: user_info
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-    #volume que vai persistir os dados do postgres mesmo que o container seja apagado
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    #portas : pc : container
     ports:
       - "5433:5432"
 
-  #interface gráfica para o postgres
   pgadmin:
     image: dpage/pgadmin4
     environment:
@@ -24,18 +17,43 @@ services:
       PGADMIN_DEFAULT_PASSWORD: password
     ports:
       - "5080:80"
-    #dependencia para o postgres, ou seja, o pgadmin só vai iniciar depois do postgres iniciar
     depends_on:
       - db
 
-
   frontend:
-    #vai até a pasta /frontend buscar o docker file para criar a imagem
     build: ./frontend
     ports:
       - "8080:80"
     volumes:
       - ./frontend/public:/usr/share/nginx/html
 
+  backend:
+    build: ./backend
+    platform: linux/amd64
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - minio
+    environment:
+      DATABASE_URL: postgresql://...
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minio
+      MINIO_SECRET_KEY: minio123
+
+  minio:
+    image: minio/minio
+    platform: linux/amd64
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
 volumes:
   postgres_data:
+  minio_data:
