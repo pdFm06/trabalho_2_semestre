@@ -37,35 +37,5 @@ services:
     volumes:
       - ./frontend/public:/usr/share/nginx/html
 
-<<<<<<< Updated upstream
-=======
-  backend:
-    build: ./backend
-    platform: linux/amd64
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
-      - minio
-    environment:
-      DATABASE_URL: postgresql://tiagofssousa5:4N^iT9qNyRBLcHNvhFOw7H*oAB!1mU@db:5432/user_info
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minio
-      MINIO_SECRET_KEY: minio123
-
-  minio:
-    image: minio/minio
-    platform: linux/amd64
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: minio123
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/data
-
->>>>>>> Stashed changes
 volumes:
   postgres_data:
