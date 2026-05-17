@@ -1,39 +1,22 @@
-// abrir e fechar o menu dos 3 pontinhos
-const menus = document.querySelectorAll(".file-menu");
+/**
+ * layout.js — Carregamento dinâmico da sidebar
+ *
+ * Faz fetch do fragmento HTML da sidebar (layout/layout_sidebar.html)
+ * e injeta-o no placeholder #sidebar-container da página.
+ *
+ * Expõe window.sidebarLoaded (Promise) para que auth_guard.js
+ * possa aguardar que os elementos da sidebar (#currentUserEmail,
+ * #logoutButton) estejam no DOM antes de os usar.
+ */
+window.sidebarLoaded = (async function loadSidebar() {
+    const container = document.getElementById("sidebar-container");
+    if (!container) return;
 
-menus.forEach(menu => {
-    menu.addEventListener("click", function (event) {
-
-        event.stopPropagation();
-
-        const dropdown = this.nextElementSibling;
-
-        document.querySelectorAll(".menu-dropdown").forEach(item => {
-            if (item !== dropdown) {
-                item.classList.remove("show");
-            }
-        });
-
-        dropdown.classList.toggle("show");
-
-    });
-});
-
-// fechar o menu quando clicar fora
-document.addEventListener("click", function () {
-    document.querySelectorAll(".menu-dropdown").forEach(item => {
-        item.classList.remove("show");
-    });
-});
-
-// exemplo de ação nos itens
-
-const menuItems = document.querySelectorAll(".menu-item");
-
-menuItems.forEach(item => {
-    item.addEventListener("click", function () {
-
-        alert("Você clicou em: " + this.textContent);
-
-    });
-});
+    try {
+        const response = await fetch("./layout/layout_sidebar.html");
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        container.innerHTML = await response.text();
+    } catch (error) {
+        console.error("Erro ao carregar a sidebar:", error);
+    }
+})();

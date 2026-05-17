@@ -3,13 +3,17 @@ const fileSearchInput = document.getElementById("fileSearchInput");
 
 let currentFiles = [];
 let isDownloading = false;
+let currentView = "grid";       // "grid" | "list"
+let showOnlyFavorites = false;  // filtro de favoritos
+
+// ─── Utilitários ────────────────────────────────────────────────────────────
 
 function driveEscapeHTML(value) {
     return String(value ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
+        .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
 
@@ -45,23 +49,37 @@ function getFileIcon(filename) {
     return "./img/main_page/download.png";
 }
 
+// ─── Renderização ────────────────────────────────────────────────────────────
+
 function renderFiles(files = currentFiles) {
     if (!filesGrid) return;
 
     if (!files || files.length === 0) {
+        const msg = showOnlyFavorites
+            ? "Ainda não há ficheiros marcados como favoritos."
+            : "Ainda não existem ficheiros nesta conta.";
         filesGrid.innerHTML = `
             <div class="col-12">
-                <div class="alert alert-light border text-muted mb-0">
-                    Ainda não existem ficheiros nesta conta.
-                </div>
+                <div class="alert alert-light border text-muted mb-0">${msg}</div>
             </div>
         `;
         return;
     }
 
+    if (currentView === "list") {
+        renderFilesList(files);
+    } else {
+        renderFilesGrid(files);
+    }
+}
+
+function renderFilesGrid(files) {
+    filesGrid.className = "row";
     filesGrid.innerHTML = files.map((file) => {
         const originalSize = file.original_file_size ?? file.file_size;
-        const numParts = Array.isArray(file.parts) ? file.parts.length : 0;
+        const favClass = file.is_favorite ? "btn-warning" : "btn-outline-warning";
+        const favTitle = file.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos";
+        const favIcon  = file.is_favorite ? "⭐" : "☆";
         return `
             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
                 <div class="caixa file-card h-100" data-file-id="${file.id}">
@@ -76,9 +94,12 @@ function renderFiles(files = currentFiles) {
                         <div>${driveFormatDate(file.created_at)}</div>
                     </div>
                     <div class="px-3 pb-3 d-flex gap-2">
-                        <button type="button" class="btn btn-sm btn-primary flex-fill" data-download-file-id="${file.id}">
-                            Download
-                        </button>
+                        <button type="button" class="btn btn-sm btn-primary flex-fill"
+                                data-download-file-id="${file.id}">Download</button>
+                        <button type="button" class="btn btn-sm ${favClass}"
+                                data-favorite-file-id="${file.id}" title="${favTitle}">${favIcon}</button>
+                        <button type="button" class="btn btn-sm btn-danger"
+                                data-delete-file-id="${file.id}" title="Eliminar">🗑</button>
                     </div>
                 </div>
             </div>
@@ -86,14 +107,73 @@ function renderFiles(files = currentFiles) {
     }).join("");
 }
 
+function renderFilesList(files) {
+    filesGrid.className = "col-12";
+    filesGrid.innerHTML = `
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Nome</th>
+                    <th scope="col" style="width:110px">Tamanho</th>
+                    <th scope="col" style="width:160px">Data</th>
+                    <th scope="col" style="width:185px"></th>
+                </tr>
+            </thead>
+            <tbody>
+                ${files.map((file) => {
+                    const originalSize = file.original_file_size ?? file.file_size;
+                    const favClass = file.is_favorite ? "btn-warning" : "btn-outline-warning";
+                    const favTitle = file.is_favorite ? "Remover dos favoritos" : "Adicionar aos favoritos";
+                    const favIcon  = file.is_favorite ? "⭐" : "☆";
+                    return `
+                    <tr data-file-id="${file.id}">
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="${getFileIcon(file.filename)}" alt="Ficheiro"
+                                     style="width:28px;height:28px;object-fit:contain;flex-shrink:0;">
+                                <span class="text-truncate" style="max-width:320px"
+                                      title="${driveEscapeHTML(file.filename)}">
+                                    ${driveEscapeHTML(file.filename)}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="text-muted small">${driveFormatFileSize(originalSize)}</td>
+                        <td class="text-muted small">${driveFormatDate(file.created_at)}</td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-end">
+                                <button type="button" class="btn btn-sm btn-primary"
+                                        data-download-file-id="${file.id}">Download</button>
+                                <button type="button" class="btn btn-sm ${favClass}"
+                                        data-favorite-file-id="${file.id}" title="${favTitle}">${favIcon}</button>
+                                <button type="button" class="btn btn-sm btn-danger"
+                                        data-delete-file-id="${file.id}" title="Eliminar">🗑</button>
+                            </div>
+                        </td>
+                    </tr>
+                    `;
+                }).join("")}
+            </tbody>
+        </table>
+    `;
+}
+
+// ─── Filtros ─────────────────────────────────────────────────────────────────
+
 function filterFiles() {
     const query = String(fileSearchInput?.value || "").trim().toLowerCase();
-    if (!query) {
-        renderFiles(currentFiles);
-        return;
+
+    let filtered = showOnlyFavorites
+        ? currentFiles.filter((f) => f.is_favorite)
+        : currentFiles;
+
+    if (query) {
+        filtered = filtered.filter((f) => String(f.filename || "").toLowerCase().includes(query));
     }
-    renderFiles(currentFiles.filter((file) => String(file.filename || "").toLowerCase().includes(query)));
+
+    renderFiles(filtered);
 }
+
+// ─── Carregar ficheiros ───────────────────────────────────────────────────────
 
 async function loadUserFiles() {
     if (!filesGrid) return;
@@ -116,6 +196,8 @@ async function loadUserFiles() {
         `;
     }
 }
+
+// ─── Modal de password para download ─────────────────────────────────────────
 
 function ensurePasswordModal() {
     let modalElement = document.getElementById("privateKeyPasswordModal");
@@ -214,11 +296,11 @@ function askPasswordForPrivateKey() {
 }
 
 async function ensurePrivateKeyLoadedForDownload() {
-    if (window.cloudCryptoState?.privateKey) {
-        return;
-    }
+    if (window.cloudCryptoState?.privateKey) return;
     await askPasswordForPrivateKey();
 }
+
+// ─── Download ─────────────────────────────────────────────────────────────────
 
 async function fetchEncryptedFile(fileId) {
     const token = getAccessToken();
@@ -226,9 +308,7 @@ async function fetchEncryptedFile(fileId) {
 
     const response = await fetch(`${API_BASE_URL}/download/${encodeURIComponent(fileId)}`, {
         method: "GET",
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
     });
 
     if (!response.ok) {
@@ -245,9 +325,7 @@ async function fetchEncryptedFileKey(fileId) {
 
     const response = await fetch(`${window.KEYSERVER_BASE_URL}/keys/${encodeURIComponent(fileId)}`, {
         method: "GET",
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
     });
 
     const data = await response.json().catch(() => null);
@@ -274,12 +352,8 @@ async function downloadAndDecryptFile(fileId) {
     if (isDownloading) return;
 
     const file = currentFiles.find((item) => Number(item.id) === Number(fileId));
-    if (!file) {
-        throw new Error("Ficheiro não encontrado na lista local.");
-    }
-    if (!file.file_iv) {
-        throw new Error("O IV do ficheiro não está disponível. Não é possível decifrar.");
-    }
+    if (!file) throw new Error("Ficheiro não encontrado na lista local.");
+    if (!file.file_iv) throw new Error("O IV do ficheiro não está disponível. Não é possível decifrar.");
 
     try {
         isDownloading = true;
@@ -310,10 +384,64 @@ async function downloadAndDecryptFile(fileId) {
     }
 }
 
+// ─── Favorito ─────────────────────────────────────────────────────────────────
+
+async function toggleFavorite(fileId) {
+    try {
+        const updated = await apiRequest(`/files/${encodeURIComponent(fileId)}/favorite`, "PATCH", null, true);
+
+        // Actualizar a lista local sem recarregar.
+        const idx = currentFiles.findIndex((f) => Number(f.id) === Number(fileId));
+        if (idx !== -1) currentFiles[idx] = updated;
+
+        filterFiles();
+
+        const label = updated.is_favorite ? "adicionado aos" : "removido dos";
+        showAlert?.(`"${driveEscapeHTML(updated.filename)}" ${label} favoritos.`, "success");
+    } catch (error) {
+        console.error(error);
+        showAlert?.(`Erro ao alterar favorito: ${error.message}`, "danger", false);
+    }
+}
+
+// ─── Delete ───────────────────────────────────────────────────────────────────
+
+async function deleteFile(fileId) {
+    const file = currentFiles.find((item) => Number(item.id) === Number(fileId));
+    const filename = file?.filename || `ficheiro #${fileId}`;
+
+    if (!confirm(`Tem a certeza que quer eliminar "${filename}"?\n\nEsta ação é irreversível.`)) return;
+
+    try {
+        await apiRequest(`/delete?file_id=${encodeURIComponent(fileId)}`, "DELETE", null, true);
+
+        currentFiles = currentFiles.filter((item) => Number(item.id) !== Number(fileId));
+        filterFiles();
+
+        // Actualizar barra de espaço após delete.
+        if (window.currentUser && file) {
+            window.currentUser.storage_used = Math.max(0, (window.currentUser.storage_used || 0) - (file.file_size || 0));
+            window.updateStorageBar?.(window.currentUser.storage_used, window.currentUser.storage_quota ?? 1_073_741_824);
+        }
+
+        showAlert?.(`"${driveEscapeHTML(filename)}" eliminado com sucesso.`, "success");
+    } catch (error) {
+        console.error(error);
+        showAlert?.(`Erro ao eliminar: ${error.message}`, "danger", false);
+    }
+}
+
+// ─── Event listeners ─────────────────────────────────────────────────────────
+
 filesGrid?.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-download-file-id]");
-    if (!button) return;
-    downloadAndDecryptFile(button.dataset.downloadFileId);
+    const downloadBtn = event.target.closest("[data-download-file-id]");
+    if (downloadBtn) { downloadAndDecryptFile(downloadBtn.dataset.downloadFileId); return; }
+
+    const favBtn = event.target.closest("[data-favorite-file-id]");
+    if (favBtn) { toggleFavorite(favBtn.dataset.favoriteFileId); return; }
+
+    const deleteBtn = event.target.closest("[data-delete-file-id]");
+    if (deleteBtn) { deleteFile(deleteBtn.dataset.deleteFileId); return; }
 });
 
 fileSearchInput?.addEventListener("input", filterFiles);
@@ -322,5 +450,36 @@ document.addEventListener("DOMContentLoaded", () => {
     loadUserFiles();
 });
 
+// ─── Exports globais ─────────────────────────────────────────────────────────
+
 window.loadUserFiles = loadUserFiles;
 window.downloadAndDecryptFile = downloadAndDecryptFile;
+window.deleteFile = deleteFile;
+window.toggleFavorite = toggleFavorite;
+
+window.setView = function (mode) {
+    if (mode !== "grid" && mode !== "list") return;
+    currentView = mode;
+
+    const btnGrid = document.getElementById("btnViewGrid");
+    const btnList = document.getElementById("btnViewList");
+    if (btnGrid && btnList) {
+        btnGrid.className = mode === "grid" ? "btn btn-sm btn-secondary" : "btn btn-sm btn-outline-secondary";
+        btnList.className = mode === "list" ? "btn btn-sm btn-secondary" : "btn btn-sm btn-outline-secondary";
+    }
+    filterFiles();
+};
+
+window.setFavoriteFilter = function (onlyFavorites) {
+    showOnlyFavorites = !!onlyFavorites;
+
+    // Actualizar estilo do botão "Favoritos" na toolbar.
+    const btnFav = document.getElementById("btnFavoritos");
+    if (btnFav) {
+        btnFav.className = showOnlyFavorites
+            ? "btn btn-sm btn-warning"
+            : "btn btn-sm btn-outline-warning";
+    }
+
+    filterFiles();
+};

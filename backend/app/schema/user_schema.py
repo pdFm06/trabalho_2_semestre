@@ -138,7 +138,6 @@ class UserMeResponse(BaseModel):
     email: EmailStr
     is_active: bool
     public_key: str
-
     # Material criptográfico cifrado. É devolvido ao próprio utilizador autenticado
     # para permitir recarregar a chave privada em memória após refresh da página.
     encrypted_private_key: str
@@ -147,6 +146,9 @@ class UserMeResponse(BaseModel):
     kdf_iterations: int
     kdf_hash: str
     key_algorithm: str
+    # Quotas de armazenamento
+    storage_quota: int
+    storage_used: int
 
     created_at: datetime
 

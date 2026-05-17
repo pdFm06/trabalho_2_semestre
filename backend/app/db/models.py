@@ -23,6 +23,8 @@ class File(Base):
     original_file_size = Column(Integer, nullable=True)
     file_hash = Column(String, nullable=True)  # Hash SHA-256 do ficheiro cifrado.
 
+    is_favorite = Column(Boolean, nullable=False, default=False, server_default="false")
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -67,3 +69,10 @@ class User(Base):
     password_reset_code_hash = Column(String, nullable=True)
     password_reset_expires_at = Column(DateTime(timezone=True), nullable=True)
 
+    # -------------------------------------------------------------------
+    # Quotas de armazenamento
+    # -------------------------------------------------------------------
+    # storage_quota: espaço máximo permitido em bytes (padrão: 1 GB).
+    # storage_used:  espaço atualmente ocupado pelos ficheiros do utilizador.
+    storage_quota = Column(Integer, nullable=False, default=1_073_741_824, server_default="1073741824")
+    storage_used  = Column(Integer, nullable=False, default=0,             server_default="0")

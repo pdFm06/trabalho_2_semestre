@@ -12,7 +12,7 @@ from app.db.models import User
 from app.schema.file_schema import FileResponse, File_Create
 from app.services.auth_service import get_current_user
 from app.services.split_service import split_file
-from app.storage.minio_client import upload_part, download_part
+from app.storage.minio_client import upload_part, download_part, delete_part
 import uuid
 router = APIRouter(tags=["files"])
 
@@ -116,6 +116,22 @@ def get_my_files(
     return crud.get_files_by_owner(db=db, owner_id=current_user.id)
 
 
+@router.patch("/files/{file_id}/favorite", response_model=FileResponse)
+def toggle_favorite(
+    file_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Alterna o estado de favorito de um ficheiro."""
+    db_file = crud.toggle_favorite(db, file_id=file_id, owner_id=current_user.id)
+    if not db_file:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ficheiro não encontrado.",
+        )
+    return db_file
+
+
 def _delete_file_key_from_keyserver(file_id: int, authorization_header: str | None) -> bool:
     """Apaga a chave cifrada do ficheiro no keyserver.
 
@@ -150,7 +166,9 @@ def delete_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    db_file = crud.delete_file(db, file_id=file_id, owner_id=current_user.id)
+    # 1. Verificar se o ficheiro existe ANTES de apagar,
+    #    para guardar os metadados (partes do MinIO e nome).
+    db_file = crud.get_file_by_id_and_owner(db, file_id=file_id, owner_id=current_user.id)
 
     if not db_file:
         raise HTTPException(
@@ -158,9 +176,32 @@ def delete_file(
             detail="Ficheiro não encontrado.",
         )
 
+    # Guardar as partes e o nome antes de os perder após o commit.
+    parts_to_delete = list(db_file.parts or [])
+    filename = db_file.filename
+
+    # 2. Apagar o registo da base de dados.
+    crud.delete_file(db, file_id=file_id, owner_id=current_user.id)
+
+    # 3. Apagar as partes do MinIO (best-effort).
+    #    Se o MinIO falhar, o ficheiro já foi removido da BD e do keyserver —
+    #    registamos os erros na resposta para o frontend poder informar o utilizador.
+    minio_errors = []
+    for part in parts_to_delete:
+        bucket = part.get("bucket")
+        object_name = part.get("object_name")
+        if bucket and object_name:
+            try:
+                delete_part(bucket=bucket, object_name=object_name)
+            except Exception as exc:
+                minio_errors.append(f"{bucket}/{object_name}: {exc}")
+
+    # 4. Apagar a chave cifrada no keyserver (best-effort).
     key_deleted = _delete_file_key_from_keyserver(file_id, authorization)
 
     return {
-        "message": f"Ficheiro '{db_file.filename}' eliminado com sucesso.",
+        "message": f"Ficheiro '{filename}' eliminado com sucesso.",
         "keyserver_key_deleted": key_deleted,
+        "minio_parts_deleted": len(parts_to_delete) - len(minio_errors),
+        "minio_errors": minio_errors if minio_errors else None,
     }

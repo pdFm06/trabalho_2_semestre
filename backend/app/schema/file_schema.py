@@ -25,6 +25,7 @@ class FileResponse(BaseModel):
     file_size: int
     original_file_size: int | None
     file_hash: str | None
+    is_favorite: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -359,3 +359,53 @@ main {
 .modal-footer {
     border-top: 1px solid #e2e2e2;
 }
+/* ─── Vista em lista ──────────────────────────────────────────────────── */
+.files-list-view {
+    width: 100%;
+}
+
+.file-list-header,
+.file-list-row {
+    display: grid;
+    grid-template-columns: 1fr 110px 160px 200px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 8px;
+}
+
+.file-list-header {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.file-list-row {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.15s;
+}
+
+.file-list-row:hover {
+    background-color: #f8f9fa;
+}
+
+.fli-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0; /* permite text-truncate funcionar */
+}
+
+.fli-name img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.fli-actions {
+    justify-content: flex-end;
+}
+/* ──────────────────────────────────────────────────────────────────────── */

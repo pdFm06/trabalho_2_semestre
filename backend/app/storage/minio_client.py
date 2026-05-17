@@ -69,7 +69,7 @@ def upload_part(
             "owner_id": user_id,
             "storage_id": storage_id,
             "part_number": str(part_number),
-            "original_filename": original_filename,
+            "original_filename": original_filename.encode("ascii", errors="replace").decode("ascii"),
         },
     )
 
@@ -79,6 +79,23 @@ def upload_part(
         "part_number": part_number,
         "size": len(data),
     }
+
+
+def delete_part(bucket: str, object_name: str) -> None:
+    """
+    Remove um objeto (parte de ficheiro) do MinIO.
+
+    Esta operação é best-effort: se o objeto já não existir (NoSuchKey),
+    considera-se que já foi eliminado e não lança erro.
+    """
+    try:
+        _client.remove_object(bucket_name=bucket, object_name=object_name)
+    except S3Error as exc:
+        if exc.code == "NoSuchKey":
+            return  # Já não existe — OK
+        raise RuntimeError(
+            f"Erro ao eliminar '{object_name}' do bucket '{bucket}': {exc}"
+        )
 
 
 def download_part(bucket: str, object_name: str) -> bytes:

@@ -20,14 +20,35 @@ def get_files_by_owner(db: Session, owner_id: int) -> list[File]:
 def get_file_by_id_and_owner(db: Session, file_id: int, owner_id: int) -> File | None:
     return db.query(File).filter(File.id == file_id, File.owner_id == owner_id).first()
 
+def toggle_favorite(db: Session, file_id: int, owner_id: int) -> File | None:
+    """
+    Alterna o estado de favorito de um ficheiro.
+    Devolve o ficheiro atualizado, ou None se não existir.
+    """
+    db_file = get_file_by_id_and_owner(db, file_id, owner_id)
+    if not db_file:
+        return None
+    db_file.is_favorite = not db_file.is_favorite
+    db.commit()
+    db.refresh(db_file)
+    return db_file
+
 def delete_file(db: Session, file_id: int, owner_id: int) -> File | None:
     """
     DELETE — Remove um ficheiro da base de dados pelo seu file_id.
+    Decrementa também o espaço utilizado pelo utilizador.
     Devolve o objeto eliminado ou None se não existir.
     """
     db_file = get_file_by_id_and_owner(db, file_id, owner_id)
     if not db_file:
         return None
+
+    # Decrementar storage_used antes de apagar o ficheiro.
+    owner = get_user_by_id(db, owner_id)
+    if owner:
+        owner.storage_used = max(0, (owner.storage_used or 0) - (db_file.file_size or 0))
+        db.add(owner)
+
     db.delete(db_file)
     db.commit()
     return db_file
@@ -154,12 +175,8 @@ def reset_user_password_and_keys(db: Session, user: User, reset_data) -> User:
 
 def create_file(db: Session, file_data: File_Create) -> File:
     """
-    Cria o registo de metadados do ficheiro na BD principal.
-
-    Nota importante:
-    - A encrypted_file_key NÃO pertence ao backend.
-    - A chave AES do ficheiro, cifrada com a public key do utilizador,
-      deve ser guardada apenas no keyserver.
+    Cria o registo de metadados do ficheiro na BD principal
+    e incrementa o espaço utilizado pelo utilizador.
     """
     db_file = File(
         filename=file_data.filename,
@@ -173,6 +190,13 @@ def create_file(db: Session, file_data: File_Create) -> File:
     )
 
     db.add(db_file)
+
+    # Incrementar storage_used do utilizador.
+    owner = get_user_by_id(db, file_data.owner_id)
+    if owner:
+        owner.storage_used = (owner.storage_used or 0) + (file_data.file_size or 0)
+        db.add(owner)
+
     db.commit()
     db.refresh(db_file)
 
