@@ -1,45 +1,45 @@
+from typing import Any
+
 from pydantic import BaseModel
 from datetime import datetime
 
-# ---------------------------------------------------------------------------
-# O Pydantic valida e serializa os dados que entram e saem da API.
-# Cada classe define a "forma" esperada dos dados JSON.
-# ---------------------------------------------------------------------------
 
-# ---------------------------------------------------------------------------
-# Schema de resposta ao upload
-# ---------------------------------------------------------------------------
-# Retornado quando um ficheiro é carregado com sucesso.
-class FileUploadResponse(BaseModel):
-    message: str               # Ex: "Ficheiro carregado com sucesso"
-    file_id: str               # UUID único do ficheiro
-    original_filename: str     # Nome original (ex: "documento.pdf")
-    num_parts: int             # Número de partes em que foi dividido
-    buckets: list[str]         # Lista de buckets onde as partes foram guardadas
-
-
-# ---------------------------------------------------------------------------
-# Schema de item na listagem de ficheiros
-# ---------------------------------------------------------------------------
-# Usado quando o utilizador pede a lista de todos os seus ficheiros.
-class FileListItem(BaseModel):
-    id: int
-    file_id: str
-    original_filename: str
+class File_Create(BaseModel):
+    filename: str
+    owner_id: int
+    parts: list[dict[str, Any]] | None = None
+    encryption_mode: str | None = None
+    file_iv: str | None = None
     file_size: int
-    num_parts: int
-    uploaded_at: datetime
+    original_file_size: int | None = None
+    file_hash: str | None = None
 
-    # model_config com from_attributes=True permite criar este schema
-    # diretamente a partir de um objeto SQLAlchemy (ORM model).
-    # Sem isto, o Pydantic não consegue ler atributos de objetos Python.
+
+class FileResponse(BaseModel):
+    id: int
+    filename: str
+    owner_id: int
+    parts: list[dict[str, Any]]
+    encryption_mode: str | None
+    file_iv: str | None
+    file_size: int
+    original_file_size: int | None
+    file_hash: str | None
+    created_at: datetime
+
     model_config = {"from_attributes": True}
 
 
-# ---------------------------------------------------------------------------
-# Schema de resposta ao download
-# ---------------------------------------------------------------------------
-# Metadados retornados antes de enviar o ficheiro reconstruído.
+class FileListItem(BaseModel):
+    id: int
+    filename: str
+    file_size: int
+    num_parts: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class FileDownloadInfo(BaseModel):
     file_id: str
     original_filename: str

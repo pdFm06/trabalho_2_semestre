@@ -99,7 +99,7 @@ main {
     box-sizing: border-box;
 }
 
-.container_search{
+.container_search {
     width: 100%;
     margin-top: 30px;
     padding-left: 12px;
@@ -107,13 +107,21 @@ main {
     box-sizing: border-box;
 }
 
+.search_box {
+    margin: 0;
+}
 
-.search_box input{
-    width:100%;
-    padding:10px;
-    border-radius:30px;
-    border:1px solid #ccc;
-    margin-top: 50px;
+.search_box input {
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: 30px;
+    border: 1px solid #ccc;
+}
+
+.button_add_files {
+    padding: 10px 24px;
+    border-radius: 30px;
+    
 }
 
 .container_main{ 
@@ -268,4 +276,86 @@ main {
 
 .menu-item:hover{
     background-color: #f5f7fb;
+}
+
+/* -------------------- MODAL DE UPLOAD -------------------- */
+
+/* Área de Drag and Drop */
+#dropZone {
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease;
+    border: 2px dashed #ccc !important;
+    background-color: transparent;
+}
+
+#dropZone:hover {
+    border-color: #0d6efd !important;
+    background-color: #f0f7ff;
+}
+
+#dropZone.dragover {
+    border-color: #0d6efd !important;
+    background-color: #f0f7ff;
+    box-shadow: 0 0 10px rgba(13, 110, 253, 0.25);
+}
+
+#dropZone svg {
+    color: #0d6efd;
+    margin-bottom: 10px;
+}
+
+#dropZone p {
+    margin: 0;
+}
+
+/* Lista de ficheiros */
+#fileItems {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#fileItems .list-group-item {
+    border: 1px solid #e2e2e2;
+    padding: 12px;
+}
+
+#fileItems .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+#fileItems .list-group-item strong {
+    color: #333;
+    word-break: break-word;
+}
+
+#fileItems .text-muted {
+    font-size: 0.85rem;
+}
+
+/* Botão de envio */
+#uploadBtn {
+    min-width: 120px;
+}
+
+#uploadBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Ocultando o input de ficheiro */
+#fileInput {
+    display: none;
+}
+
+/* Modal header e footer */
+.modal-header {
+    border-bottom: 1px solid #e2e2e2;
+}
+
+.modal-footer {
+    border-top: 1px solid #e2e2e2;
 }

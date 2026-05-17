@@ -1,4 +1,5 @@
 import io
+import time
 from minio import Minio
 from minio.error import S3Error
 from app.core.config import settings
@@ -15,34 +16,69 @@ _client = Minio(
     secure=settings.MINIO_SECURE,
 )
 
-def _ensure_bucket(bucket: str):
+def _ensure_bucket(bucket: str, attempts: int = 10, delay_seconds: float = 0.5):
     """
     Verifica se o bucket existe no MinIO.
     Se não existir, cria-o automaticamente.
-    Chamada internamente antes de qualquer upload.
+
+    O retry evita que o primeiro upload falhe quando o container do MinIO
+    já arrancou, mas ainda não está totalmente pronto para receber pedidos.
     """
-    if not _client.bucket_exists(bucket):
-        _client.make_bucket(bucket)
+    last_error = None
 
+    for attempt in range(1, attempts + 1):
+        try:
+            if not _client.bucket_exists(bucket):
+                _client.make_bucket(bucket)
+            return
+        except S3Error as exc:
+            # Se outro pedido criou o bucket entre o bucket_exists e o make_bucket,
+            # considerar a operação concluída.
+            if exc.code in {"BucketAlreadyOwnedByYou", "BucketAlreadyExists"}:
+                return
+            last_error = exc
+        except Exception as exc:
+            last_error = exc
 
-def upload_part(bucket: str, object_name: str, data: bytes) -> None:
+        if attempt < attempts:
+            time.sleep(delay_seconds * attempt)
+
+    raise RuntimeError(f"MinIO não ficou pronto para usar o bucket '{bucket}': {last_error}")
+
+def upload_part(
+    bucket: str,
+    user_id: int,
+    storage_id: str,
+    part_number: int,
+    data: bytes,
+    original_filename: str,
+) -> dict:
     """
-    Faz upload de uma parte (bytes) para o MinIO.
-
-    - bucket: nome do bucket de destino (ex: "bucket-part-0")
-    - object_name: nome do objeto dentro do bucket (ex: "uuid_part0")
-    - data: os bytes a guardar
-
-    io.BytesIO converte os bytes numa "stream" que o MinIO consegue ler.
-    len(data) é obrigatório para o MinIO saber o tamanho antecipadamente.
+    Faz upload de uma parte para o MinIO.
     """
+    object_name = f"user_{user_id}/{storage_id}_part{part_number}"
+
     _ensure_bucket(bucket)
+
     _client.put_object(
         bucket_name=bucket,
         object_name=object_name,
         data=io.BytesIO(data),
         length=len(data),
+        metadata={
+            "owner_id": user_id,
+            "storage_id": storage_id,
+            "part_number": str(part_number),
+            "original_filename": original_filename,
+        },
     )
+
+    return {
+        "bucket": bucket,
+        "object_name": object_name,
+        "part_number": part_number,
+        "size": len(data),
+    }
 
 
 def download_part(bucket: str, object_name: str) -> bytes:

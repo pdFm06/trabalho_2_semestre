@@ -1,7 +1,15 @@
-fastapi
-uvicorn
-python-multipart
-sqlalchemy
-psycopg2-binary
-minio
-pydantic
+fastapi # framework que corre a API
+uvicorn[standard] # servidor que corre a API
+sqlalchemy # faz a ligacao do postgree com o python 
+psycopg2-binary # faz a traducao entre python e postgree
+pydantic # valida os dados que entram e sai da API 
+pydantic-settings # le configuracoes de variavel de ambiente
+email-validator #valida o email de forma segura 
+python-dotenv # le ficheiros env 
+passlib[bcrypt]==1.7.4 # encripta passowrd de forma segura
+bcrypt==4.0.1 # algoritimo de encriptacao usado pela passlib
+python-multipart # permite receber ficheiros em pedidos http 
+minio # cliente para se comunicar com o minIO
+cryptography
+
+python-jose[cryptography] # criação e validação de tokens JWT

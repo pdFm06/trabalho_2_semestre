@@ -1,15 +1,34 @@
 from fastapi import FastAPI
-from app.api.routes_files import router as files_router
-from app.db.database import engine, Base
+from fastapi.middleware.cors import CORSMiddleware
 
-# Cria todas as tabelas na base de dados ao iniciar a aplicação.
-# Se as tabelas já existirem, não faz nada (não apaga dados).
-# Em produção, deves usar migrações (ex: Alembic) em vez disto.
+from app.api import routes_files, routes_users
+from app.db.database import Base, engine
+
+
+app = FastAPI(
+    title="Cloud Storage API",
+    version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Apenas aceitável em desenvolvimento.
+# Em produção, usa Alembic migrations.
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Secure Cloud Storage")
+app.include_router(routes_files.router)
+app.include_router(routes_users.router)
 
-app.include_router(files_router, prefix="/files", tags=["files"])
+
+@app.get("/health")
+def health_check() -> dict[str, str]:
+    return {"status": "ok"}
 
 @app.get("/")
 def root():

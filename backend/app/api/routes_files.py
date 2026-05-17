@@ -1,144 +1,166 @@
-import uuid
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
-from fastapi.responses import Response
+import hashlib
+from fastapi import APIRouter, UploadFile, File as FastAPIFile, Depends, HTTPException, status, Form, Header
 from sqlalchemy.orm import Session
-
-from app.db.database import get_db
-from app.db.models import UploadedFile
-from app.schema.file_schema import FileUploadResponse, FileListItem
-from app.services.split_service import split_file, reassemble_file
-from app.storage.minio_client import upload_part, download_part
+from urllib import request, error
+import io
+from fastapi.responses import StreamingResponse
 from app.core.config import settings
 
-# ---------------------------------------------------------------------------
-# Router
-# ---------------------------------------------------------------------------
-# APIRouter é como um "mini-app" FastAPI.
-# Definimos as rotas aqui e registamos no main.py com app.include_router().
-router = APIRouter()
+from app.db.database import get_db
+from app.db import crud
+from app.db.models import User
+from app.schema.file_schema import FileResponse, File_Create
+from app.services.auth_service import get_current_user
+from app.services.split_service import split_file
+from app.storage.minio_client import upload_part, download_part
+import uuid
+router = APIRouter(tags=["files"])
 
 
-# ---------------------------------------------------------------------------
-# POST /files/upload
-# ---------------------------------------------------------------------------
-@router.post("/upload", response_model=FileUploadResponse)
+@router.post("/upload", response_model=FileResponse)
 async def upload_file(
-    file: UploadFile = File(...),       # ficheiro recebido no form-data
-    db: Session = Depends(get_db)       # sessão de base de dados injetada automaticamente
+    file: UploadFile = FastAPIFile(...),
+    file_iv: str = Form(...),
+    original_file_size: int = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Recebe um ficheiro, divide-o em partes e guarda cada parte
-    num bucket MinIO diferente. Os metadados ficam no PostgreSQL.
-    """
+    Recebe um ficheiro já cifrado pelo frontend.
 
-    # 1. Ler todos os bytes do ficheiro enviado
+    Nesta fase ainda não guardamos as partes no MinIO. O objetivo é fechar o fluxo:
+    frontend cifra ficheiro -> backend guarda metadados do ficheiro cifrado ->
+    frontend guarda a chave AES cifrada no keyserver.
+    """
     data = await file.read()
 
-    # 2. Gerar um ID único para este ficheiro (evita colisões de nomes)
-    file_id = str(uuid.uuid4())
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="O ficheiro está vazio.",
+        )
 
-    # 3. Dividir o ficheiro em N partes (definido em config.py)
-    parts = split_file(data, parts=settings.FILE_PARTS)
+    if original_file_size < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tamanho original inválido.",
+        )
 
-    # 4. Guardar cada parte no bucket MinIO correspondente
-    bucket_names = []
-    for i, part_data in enumerate(parts):
-        bucket = settings.MINIO_BUCKETS[i]
-        # O objeto no MinIO será nomeado com o file_id para fácil recuperação
-        object_name = f"{file_id}_part{i}"
-        upload_part(bucket=bucket, object_name=object_name, data=part_data)
-        bucket_names.append(bucket)
+    file_hash = hashlib.sha256(data).hexdigest()
 
-    # 5. Guardar os metadados na base de dados PostgreSQL
-    db_file = UploadedFile(
-        original_filename=file.filename,
-        file_id=file_id,
-        num_parts=len(parts),
-        bucket_names=",".join(bucket_names),   # "bucket-part-0,bucket-part-1,bucket-part-2"
+    file_storage_id = str(uuid.uuid4())
+    chunks = split_file(data, parts=settings.FILE_PARTS)
+
+    stored_parts = []   
+
+    for index, chunk in enumerate(chunks):
+        bucket = settings.MINIO_BUCKETS[index]
+
+        part_info = upload_part(
+            bucket=bucket,
+            user_id=current_user.id,
+            storage_id=file_storage_id,
+            part_number=index,
+            data=chunk,
+            original_filename=file.filename or "ficheiro-sem-nome",
+            )
+
+        stored_parts.append(part_info)
+
+
+    file_data = File_Create(
+        filename=file.filename or "ficheiro-sem-nome",
+        owner_id=current_user.id,
+        parts=stored_parts, 
+        encryption_mode="client-side-aes-256-gcm",
+        file_iv=file_iv,
         file_size=len(data),
-    )
-    db.add(db_file)     # adiciona à sessão (ainda não grava)
-    db.commit()         # grava na base de dados
-    db.refresh(db_file) # atualiza o objeto com os dados gerados pela BD (ex: id)
-
-    return FileUploadResponse(
-        message="Ficheiro carregado com sucesso.",
-        file_id=file_id,
-        original_filename=file.filename,
-        num_parts=len(parts),
-        buckets=bucket_names,
+        original_file_size=original_file_size,
+        file_hash=file_hash,
     )
 
+    return crud.create_file(db=db, file_data=file_data)
 
-# ---------------------------------------------------------------------------
-# GET /files/
-# ---------------------------------------------------------------------------
-@router.get("/", response_model=list[FileListItem])
-def list_files(db: Session = Depends(get_db)):
-    """
-    Devolve a lista de todos os ficheiros armazenados.
-    """
-    files = db.query(UploadedFile).all()
-    return files
-
-
-# ---------------------------------------------------------------------------
-# GET /files/{file_id}/download
-# ---------------------------------------------------------------------------
-@router.get("/{file_id}/download")
-def download_file(file_id: str, db: Session = Depends(get_db)):
-    """
-    Reconstrói o ficheiro original a partir das partes no MinIO
-    e envia-o como resposta binária para o cliente.
-    """
-
-    # 1. Procurar os metadados na base de dados
-    db_file = db.query(UploadedFile).filter(UploadedFile.file_id == file_id).first()
+@router.get("/download/{file_id}")
+def download_file(
+    file_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_file = crud.get_file_by_id_and_owner(db, file_id=file_id, owner_id=current_user.id)
 
     if not db_file:
-        # 404 se o file_id não existir
-        raise HTTPException(status_code=404, detail="Ficheiro não encontrado.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ficheiro não encontrado.",
+        )
 
-    # 2. Recuperar cada parte do MinIO
-    buckets = db_file.bucket_names.split(",")
-    parts = []
-    for i, bucket in enumerate(buckets):
-        object_name = f"{file_id}_part{i}"
-        part_data = download_part(bucket=bucket, object_name=object_name)
-        parts.append(part_data)
+    def file_stream_generator():
+        for part in db_file.parts:
+            bucket = part["bucket"]
+            object_name = part["object_name"]
+            yield download_part(bucket, object_name)
 
-    # 3. Reconstruir o ficheiro original
-    original_data = reassemble_file(parts)
-
-    # 4. Enviar como download binário
-    # filename* usa codificação UTF-8 (RFC 5987) para suportar caracteres especiais
-    # como ã, ç, é, etc. que não são permitidos diretamente em headers HTTP (latin-1)
-    from urllib.parse import quote
-    filename_encoded = quote(db_file.original_filename, safe="")
-    return Response(
-        content=original_data,
+    return StreamingResponse(
+        file_stream_generator(),
         media_type="application/octet-stream",
-        headers={
-            "Content-Disposition": f"attachment; filename*=UTF-8''{filename_encoded}"
-        }
+        headers={"Content-Disposition": f'attachment; filename="{db_file.filename}"'},
     )
 
 
-# ---------------------------------------------------------------------------
-# DELETE /files/{file_id}
-# ---------------------------------------------------------------------------
-@router.delete("/{file_id}")
-def delete_file(file_id: str, db: Session = Depends(get_db)):
+@router.get("/files", response_model=list[FileResponse])
+def get_my_files(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return crud.get_files_by_owner(db=db, owner_id=current_user.id)
+
+
+def _delete_file_key_from_keyserver(file_id: int, authorization_header: str | None) -> bool:
+    """Apaga a chave cifrada do ficheiro no keyserver.
+
+    Esta chamada é best-effort: se o keyserver estiver indisponível, o backend não
+    deixa de apagar o registo do ficheiro. O frontend recebe a indicação para ser
+    claro que pode ter ficado uma chave órfã no keyserver.
     """
-    Remove os metadados da base de dados.
-    (Opcional: podes também apagar os objetos do MinIO aqui.)
-    """
-    db_file = db.query(UploadedFile).filter(UploadedFile.file_id == file_id).first()
+    if not authorization_header:
+        return False
+
+    url = f"{settings.KEYSERVER_INTERNAL_URL.rstrip('/')}/keys/{file_id}"
+    req = request.Request(
+        url=url,
+        method="DELETE",
+        headers={"Authorization": authorization_header},
+    )
+
+    try:
+        with request.urlopen(req, timeout=3) as response:
+            return 200 <= response.status < 300
+    except error.HTTPError as exc:
+        # 404 significa que a chave já não existe; para o delete isto é aceitável.
+        return exc.code == status.HTTP_404_NOT_FOUND
+    except Exception:
+        return False
+
+
+@router.delete("/delete")
+def delete_file(
+    file_id: int,
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db_file = crud.delete_file(db, file_id=file_id, owner_id=current_user.id)
 
     if not db_file:
-        raise HTTPException(status_code=404, detail="Ficheiro não encontrado.")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ficheiro não encontrado.",
+        )
 
-    db.delete(db_file)
-    db.commit()
+    key_deleted = _delete_file_key_from_keyserver(file_id, authorization)
 
-    return {"message": f"Ficheiro '{db_file.original_filename}' eliminado com sucesso."}
+    return {
+        "message": f"Ficheiro '{db_file.filename}' eliminado com sucesso.",
+        "keyserver_key_deleted": key_deleted,
+    }
