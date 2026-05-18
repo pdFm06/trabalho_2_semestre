@@ -32,13 +32,59 @@ class Settings(BaseSettings):
     # ----------------------------
     # MinIO (armazenamento de objetos)
     # ----------------------------
+    # Compatibilidade com a configuração antiga de um único MinIO.
     MINIO_ENDPOINT: str = os.getenv("MINIO_ENDPOINT", "localhost:9000")
     MINIO_ACCESS_KEY: str = os.getenv("MINIO_ACCESS_KEY", "minio")
     MINIO_SECRET_KEY: str = os.getenv("MINIO_SECRET_KEY", "minio123")
     MINIO_SECURE: bool = os.getenv("MINIO_SECURE", "false").lower() == "true"
 
-    # Nome dos buckets onde as partes dos ficheiros serão guardadas.
-    MINIO_BUCKETS: list[str] = ["bucket-part-0", "bucket-part-1", "bucket-part-2"]
+    # Nova arquitetura: três instâncias MinIO independentes, cada uma com um bucket.
+    # O backend guarda uma parte do ficheiro cifrado em cada instância.
+    MINIO_1_ENDPOINT: str = os.getenv("MINIO_1_ENDPOINT", os.getenv("MINIO_ENDPOINT", "localhost:9000"))
+    MINIO_1_ACCESS_KEY: str = os.getenv("MINIO_1_ACCESS_KEY", os.getenv("MINIO_ACCESS_KEY", "minio"))
+    MINIO_1_SECRET_KEY: str = os.getenv("MINIO_1_SECRET_KEY", os.getenv("MINIO_SECRET_KEY", "minio123"))
+    MINIO_1_BUCKET: str = os.getenv("MINIO_1_BUCKET", "cloud-part-1")
+
+    MINIO_2_ENDPOINT: str = os.getenv("MINIO_2_ENDPOINT", os.getenv("MINIO_ENDPOINT", "localhost:9000"))
+    MINIO_2_ACCESS_KEY: str = os.getenv("MINIO_2_ACCESS_KEY", os.getenv("MINIO_ACCESS_KEY", "minio"))
+    MINIO_2_SECRET_KEY: str = os.getenv("MINIO_2_SECRET_KEY", os.getenv("MINIO_SECRET_KEY", "minio123"))
+    MINIO_2_BUCKET: str = os.getenv("MINIO_2_BUCKET", "cloud-part-2")
+
+    MINIO_3_ENDPOINT: str = os.getenv("MINIO_3_ENDPOINT", os.getenv("MINIO_ENDPOINT", "localhost:9000"))
+    MINIO_3_ACCESS_KEY: str = os.getenv("MINIO_3_ACCESS_KEY", os.getenv("MINIO_ACCESS_KEY", "minio"))
+    MINIO_3_SECRET_KEY: str = os.getenv("MINIO_3_SECRET_KEY", os.getenv("MINIO_SECRET_KEY", "minio123"))
+    MINIO_3_BUCKET: str = os.getenv("MINIO_3_BUCKET", "cloud-part-3")
+
+    @property
+    def MINIO_NODES(self) -> list[dict[str, str]]:
+        return [
+            {
+                "node_id": "minio1",
+                "endpoint": self.MINIO_1_ENDPOINT,
+                "access_key": self.MINIO_1_ACCESS_KEY,
+                "secret_key": self.MINIO_1_SECRET_KEY,
+                "bucket": self.MINIO_1_BUCKET,
+            },
+            {
+                "node_id": "minio2",
+                "endpoint": self.MINIO_2_ENDPOINT,
+                "access_key": self.MINIO_2_ACCESS_KEY,
+                "secret_key": self.MINIO_2_SECRET_KEY,
+                "bucket": self.MINIO_2_BUCKET,
+            },
+            {
+                "node_id": "minio3",
+                "endpoint": self.MINIO_3_ENDPOINT,
+                "access_key": self.MINIO_3_ACCESS_KEY,
+                "secret_key": self.MINIO_3_SECRET_KEY,
+                "bucket": self.MINIO_3_BUCKET,
+            },
+        ]
+
+    @property
+    def MINIO_BUCKETS(self) -> list[str]:
+        # Mantém compatibilidade com código que ainda consulta settings.MINIO_BUCKETS.
+        return [node["bucket"] for node in self.MINIO_NODES]
 
     # ----------------------------
     # Divisão de ficheiros

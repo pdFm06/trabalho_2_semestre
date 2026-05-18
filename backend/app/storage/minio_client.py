@@ -5,35 +5,77 @@ from minio.error import S3Error
 from app.core.config import settings
 
 # ---------------------------------------------------------------------------
-# Cliente MinIO
+# Clientes MinIO
 # ---------------------------------------------------------------------------
-# Criamos UMA instância global do cliente MinIO.
-# Ela é reutilizada em todas as chamadas (não abre ligação nova a cada pedido).
-_client = Minio(
-    endpoint=settings.MINIO_ENDPOINT,
-    access_key=settings.MINIO_ACCESS_KEY,
-    secret_key=settings.MINIO_SECRET_KEY,
-    secure=settings.MINIO_SECURE,
-)
+# Nova arquitetura:
+#   - minio1 guarda a parte 0
+#   - minio2 guarda a parte 1
+#   - minio3 guarda a parte 2
+# Cada instância MinIO tem apenas um bucket.
+#
+# O ficheiro já chega cifrado pelo frontend. O backend divide esses bytes
+# cifrados e distribui as partes pelos três nós.
+# ---------------------------------------------------------------------------
 
-def _ensure_bucket(bucket: str, attempts: int = 10, delay_seconds: float = 0.5):
+_nodes = settings.MINIO_NODES
+
+_clients: dict[str, Minio] = {
+    node["node_id"]: Minio(
+        endpoint=node["endpoint"],
+        access_key=node["access_key"],
+        secret_key=node["secret_key"],
+        secure=settings.MINIO_SECURE,
+    )
+    for node in _nodes
+}
+
+_node_by_id: dict[str, dict[str, str]] = {node["node_id"]: node for node in _nodes}
+
+
+def _get_node_by_index(node_index: int) -> dict[str, str]:
+    try:
+        return _nodes[node_index]
+    except IndexError as exc:
+        raise ValueError(f"Índice de nó MinIO inválido: {node_index}") from exc
+
+
+def _get_node_by_id(node_id: str | None, part_number: int | None = None) -> dict[str, str]:
     """
-    Verifica se o bucket existe no MinIO.
+    Resolve o nó MinIO a usar.
+
+    Para compatibilidade com registos antigos, se node_id não existir nos metadados
+    da parte, tentamos usar part_number para inferir o nó.
+    """
+    if node_id:
+        node = _node_by_id.get(node_id)
+        if node:
+            return node
+        raise ValueError(f"Nó MinIO desconhecido: {node_id}")
+
+    if part_number is not None:
+        return _get_node_by_index(int(part_number))
+
+    raise ValueError("Metadados da parte não indicam node_id nem part_number.")
+
+
+def _ensure_bucket(node: dict[str, str], attempts: int = 12, delay_seconds: float = 0.5) -> None:
+    """
+    Verifica se o bucket existe na instância MinIO indicada.
     Se não existir, cria-o automaticamente.
 
-    O retry evita que o primeiro upload falhe quando o container do MinIO
-    já arrancou, mas ainda não está totalmente pronto para receber pedidos.
+    O retry evita que o primeiro upload falhe quando o container MinIO já arrancou,
+    mas ainda não está totalmente pronto para receber pedidos S3.
     """
+    bucket = node["bucket"]
+    client = _clients[node["node_id"]]
     last_error = None
 
     for attempt in range(1, attempts + 1):
         try:
-            if not _client.bucket_exists(bucket):
-                _client.make_bucket(bucket)
+            if not client.bucket_exists(bucket):
+                client.make_bucket(bucket)
             return
         except S3Error as exc:
-            # Se outro pedido criou o bucket entre o bucket_exists e o make_bucket,
-            # considerar a operação concluída.
             if exc.code in {"BucketAlreadyOwnedByYou", "BucketAlreadyExists"}:
                 return
             last_error = exc
@@ -43,10 +85,14 @@ def _ensure_bucket(bucket: str, attempts: int = 10, delay_seconds: float = 0.5):
         if attempt < attempts:
             time.sleep(delay_seconds * attempt)
 
-    raise RuntimeError(f"MinIO não ficou pronto para usar o bucket '{bucket}': {last_error}")
+    raise RuntimeError(
+        f"MinIO '{node['node_id']}' não ficou pronto para usar o bucket "
+        f"'{bucket}': {last_error}"
+    )
+
 
 def upload_part(
-    bucket: str,
+    node_index: int,
     user_id: int,
     storage_id: str,
     part_number: int,
@@ -54,26 +100,32 @@ def upload_part(
     original_filename: str,
 ) -> dict:
     """
-    Faz upload de uma parte para o MinIO.
+    Faz upload de uma parte para a instância MinIO correspondente.
     """
+    node = _get_node_by_index(node_index)
+    bucket = node["bucket"]
+    client = _clients[node["node_id"]]
     object_name = f"user_{user_id}/{storage_id}_part{part_number}"
 
-    _ensure_bucket(bucket)
+    _ensure_bucket(node)
 
-    _client.put_object(
+    client.put_object(
         bucket_name=bucket,
         object_name=object_name,
         data=io.BytesIO(data),
         length=len(data),
         metadata={
-            "owner_id": user_id,
+            "owner_id": str(user_id),
             "storage_id": storage_id,
             "part_number": str(part_number),
+            "node_id": node["node_id"],
             "original_filename": original_filename.encode("ascii", errors="replace").decode("ascii"),
         },
     )
 
     return {
+        "storage_backend": "minio",
+        "node_id": node["node_id"],
         "bucket": bucket,
         "object_name": object_name,
         "part_number": part_number,
@@ -81,40 +133,58 @@ def upload_part(
     }
 
 
-def delete_part(bucket: str, object_name: str) -> None:
+def delete_part(
+    bucket: str,
+    object_name: str,
+    node_id: str | None = None,
+    part_number: int | None = None,
+) -> None:
     """
-    Remove um objeto (parte de ficheiro) do MinIO.
+    Remove uma parte de ficheiro da instância MinIO correta.
 
-    Esta operação é best-effort: se o objeto já não existir (NoSuchKey),
-    considera-se que já foi eliminado e não lança erro.
+    Esta operação é best-effort: se o objeto já não existir, considera-se que
+    já foi eliminado.
     """
+    node = _get_node_by_id(node_id=node_id, part_number=part_number)
+    client = _clients[node["node_id"]]
+    bucket_name = bucket or node["bucket"]
+
     try:
-        _client.remove_object(bucket_name=bucket, object_name=object_name)
+        client.remove_object(bucket_name=bucket_name, object_name=object_name)
     except S3Error as exc:
         if exc.code == "NoSuchKey":
-            return  # Já não existe — OK
+            return
         raise RuntimeError(
-            f"Erro ao eliminar '{object_name}' do bucket '{bucket}': {exc}"
+            f"Erro ao eliminar '{object_name}' do bucket '{bucket_name}' "
+            f"em '{node['node_id']}': {exc}"
         )
 
 
-def download_part(bucket: str, object_name: str) -> bytes:
+def download_part(
+    bucket: str,
+    object_name: str,
+    node_id: str | None = None,
+    part_number: int | None = None,
+) -> bytes:
     """
     Descarrega uma parte do MinIO e devolve os bytes.
-
-    response.read() lê todo o conteúdo do objeto.
-    O bloco finally garante que a ligação HTTP é sempre fechada,
-    mesmo que ocorra um erro durante a leitura.
     """
+    node = _get_node_by_id(node_id=node_id, part_number=part_number)
+    client = _clients[node["node_id"]]
+    bucket_name = bucket or node["bucket"]
+
     response = None
     try:
-        response = _client.get_object(
-            bucket_name=bucket,
+        response = client.get_object(
+            bucket_name=bucket_name,
             object_name=object_name,
         )
         return response.read()
-    except S3Error as e:
-        raise RuntimeError(f"Erro ao descarregar '{object_name}' do bucket '{bucket}': {e}")
+    except S3Error as exc:
+        raise RuntimeError(
+            f"Erro ao descarregar '{object_name}' do bucket '{bucket_name}' "
+            f"em '{node['node_id']}': {exc}"
+        )
     finally:
         if response:
             response.close()

@@ -9,7 +9,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
-    #verifica se o postgres esta pronto antes de arrancar o backend
+    # verifica se o postgres esta pronto antes de arrancar o backend
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U Projeto2Ano -d db"]
       interval: 5s
@@ -37,21 +37,43 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
-    #o backend só arranca depois do postgres estar completamente pronto
+    # O backend só arranca depois do Postgres estar pronto.
+    # As instâncias MinIO têm retry no código Python, porque service_started
+    # não garante que o serviço S3 já esteja pronto para receber pedidos.
     depends_on:
       db:
         condition: service_healthy
-      minio:
+      minio1:
+        condition: service_started
+      minio2:
+        condition: service_started
+      minio3:
         condition: service_started
 
     environment:
       DATABASE_URL: postgresql://Projeto2Ano:4N^iT9qNyRBLcHNvhFOw7H*oAB!1mU@db:5432/db
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minio
-      MINIO_SECRET_KEY: minio123
       JWT_SECRET_KEY: dev-only-change-this-secret-key-before-production
       JWT_ALGORITHM: HS256
       KEYSERVER_INTERNAL_URL: http://keyserver:9000
+
+      # Três nós MinIO independentes. Cada nó tem apenas um bucket.
+      # Em produção, estes endpoints poderiam estar em servidores/redes diferentes.
+      MINIO_1_ENDPOINT: minio1:9000
+      MINIO_1_ACCESS_KEY: minio1
+      MINIO_1_SECRET_KEY: minio123
+      MINIO_1_BUCKET: cloud-part-1
+
+      MINIO_2_ENDPOINT: minio2:9000
+      MINIO_2_ACCESS_KEY: minio2
+      MINIO_2_SECRET_KEY: minio123
+      MINIO_2_BUCKET: cloud-part-2
+
+      MINIO_3_ENDPOINT: minio3:9000
+      MINIO_3_ACCESS_KEY: minio3
+      MINIO_3_SECRET_KEY: minio123
+      MINIO_3_BUCKET: cloud-part-3
+
+      MINIO_SECURE: "false"
 
   keydb:
     image: postgres:16
@@ -82,20 +104,45 @@ services:
       JWT_SECRET_KEY: dev-only-change-this-secret-key-before-production
       JWT_ALGORITHM: HS256
 
-  minio:
+  minio1:
     image: minio/minio
-    # platform: linux/arm64 é necessário para correr no Mac com Apple Silicon (M1/M2/M3)
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minio
+      MINIO_ROOT_USER: minio1
       MINIO_ROOT_PASSWORD: minio123
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - minio_data:/data
+      - minio1_data:/data
+
+  minio2:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio2
+      MINIO_ROOT_PASSWORD: minio123
+    ports:
+      - "9010:9000"
+      - "9011:9001"
+    volumes:
+      - minio2_data:/data
+
+  minio3:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio3
+      MINIO_ROOT_PASSWORD: minio123
+    ports:
+      - "9020:9000"
+      - "9021:9001"
+    volumes:
+      - minio3_data:/data
 
 volumes:
   postgres_data:
-  minio_data:
+  minio1_data:
+  minio2_data:
+  minio3_data:
   keydb_data:

@@ -51,19 +51,17 @@ async def upload_file(
     file_storage_id = str(uuid.uuid4())
     chunks = split_file(data, parts=settings.FILE_PARTS)
 
-    stored_parts = []   
+    stored_parts = []
 
     for index, chunk in enumerate(chunks):
-        bucket = settings.MINIO_BUCKETS[index]
-
         part_info = upload_part(
-            bucket=bucket,
+            node_index=index,
             user_id=current_user.id,
             storage_id=file_storage_id,
             part_number=index,
             data=chunk,
             original_filename=file.filename or "ficheiro-sem-nome",
-            )
+        )
 
         stored_parts.append(part_info)
 
@@ -97,9 +95,16 @@ def download_file(
 
     def file_stream_generator():
         for part in db_file.parts:
-            bucket = part["bucket"]
-            object_name = part["object_name"]
-            yield download_part(bucket, object_name)
+            bucket = part.get("bucket")
+            object_name = part.get("object_name")
+            node_id = part.get("node_id")
+            part_number = part.get("part_number")
+            yield download_part(
+                bucket=bucket,
+                object_name=object_name,
+                node_id=node_id,
+                part_number=part_number,
+            )
 
     return StreamingResponse(
         file_stream_generator(),
@@ -192,7 +197,12 @@ def delete_file(
         object_name = part.get("object_name")
         if bucket and object_name:
             try:
-                delete_part(bucket=bucket, object_name=object_name)
+                delete_part(
+                    bucket=bucket,
+                    object_name=object_name,
+                    node_id=part.get("node_id"),
+                    part_number=part.get("part_number"),
+                )
             except Exception as exc:
                 minio_errors.append(f"{bucket}/{object_name}: {exc}")
 
