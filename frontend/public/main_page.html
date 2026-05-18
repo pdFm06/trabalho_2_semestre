@@ -24,7 +24,7 @@
             <div class="row align-items-center g-2">
                 <div class="col-md-6">
                     <form class="search_box" action="/search" method="get">
-                        <input id="fileSearchInput" type="search" name="Pesquisa" placeholder="Pesquisar ficheiros na pasta atual...">
+                        <input id="fileSearchInput" type="search" name="Pesquisa" placeholder="Pesquisar ficheiros...">
                     </form>
                 </div>
                 <div class="col-md-6 d-flex align-items-center justify-content-end">
@@ -95,7 +95,10 @@
 
     <section class="container_main">
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h5 class="mb-0">Os meus ficheiros</h5>
+            <div>
+                <h5 id="driveTitle" class="mb-1">Todos os ficheiros</h5>
+                <nav id="folderBreadcrumb" class="small" aria-label="Navegação por pastas"></nav>
+            </div>
             <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.loadUserFiles?.()">Atualizar</button>
                 <div class="btn-group btn-group-sm" role="group" aria-label="Modo de vista">
@@ -129,10 +132,10 @@
                         </div>
                         <div class="theme-toggle-group" role="group" aria-label="Selecionar tema">
                             <input type="radio" class="btn-check" name="themeOptions" id="themeLight" value="light" autocomplete="off">
-                            <label class="btn btn-outline-primary" for="themeLight">Claro</label>
+                            <label class="btn btn-outline-primary" for="themeLight">☀️ Claro</label>
 
                             <input type="radio" class="btn-check" name="themeOptions" id="themeDark" value="dark" autocomplete="off">
-                            <label class="btn btn-outline-primary" for="themeDark">Escuro</label>
+                            <label class="btn btn-outline-primary" for="themeDark">🌙 Escuro</label>
                         </div>
                     </div>
 
@@ -240,11 +243,12 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="layout/layout.js"></script>
-<script src="js/api.js?v=20260517-fix-upload-fetch"></script>
-<script src="js/crypto_utils.js?v=20260517-fix-upload-fetch"></script>
-<script src="js/auth_guard.js?v=20260517-fix-upload-fetch"></script>
-<script src="js/file_upload.js?v=20260517-fix-upload-fetch"></script>
-<script src="js/file_drive.js?v=20260517-fix-upload-fetch"></script>
+<script src="layout/layout.js?v=20260518-home-drive-split"></script>
+<script src="js/settings.js?v=20260518-home-drive-split"></script>
+<script src="js/api.js?v=20260518-home-drive-split"></script>
+<script src="js/crypto_utils.js?v=20260518-home-drive-split"></script>
+<script src="js/auth_guard.js?v=20260518-home-drive-split"></script>
+<script src="js/file_upload.js?v=20260518-home-drive-split"></script>
+<script src="js/file_drive.js?v=20260518-home-drive-split"></script>
 </body>
 </html>
