@@ -29,6 +29,9 @@ class UserCryptoMaterial(BaseModel):
     encrypted_private_key_recovery: str = Field(min_length=32)
     recovery_key_iv: str = Field(min_length=8)
 
+    # Hash/verificador da recovery key. A recovery key em claro nunca é enviada.
+    recovery_key_hash: str | None = None
+
     key_algorithm: str = Field(default="RSA-OAEP-4096-SHA-256")
 
     @field_validator("kdf_hash")
@@ -54,6 +57,7 @@ class UserCreate(UserCryptoMaterial):
 
     encrypted_private_key_recovery: str
     recovery_key_iv: str
+    recovery_key_hash: str | None = None
 
     @field_validator("password")
     @classmethod
@@ -111,23 +115,31 @@ class PasswordResetConfirmResponse(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    access_token: str
+    # Quando mfa_required=True, estes campos vêm vazios porque o token
+    # só é emitido depois de validar o código MFA ou a recovery key.
+    access_token: str | None = None
     token_type: str = "bearer"
-    expires_in: int
+    expires_in: int | None = None
 
-    public_key: str
-    encrypted_private_key: str
-    private_key_iv: str
-    kdf_salt: str
-    kdf_iterations: int
-    kdf_hash: str
-    key_algorithm: str
+    public_key: str | None = None
+    encrypted_private_key: str | None = None
+    private_key_iv: str | None = None
+    kdf_salt: str | None = None
+    kdf_iterations: int | None = None
+    kdf_hash: str | None = None
+    key_algorithm: str | None = None
+
+    mfa_required: bool = False
+    mfa_challenge_id: str | None = None
+    dev_mfa_code: str | None = None
+    message: str | None = None
 
 
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
     is_active: bool
+    mfa_enabled: bool = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -137,6 +149,7 @@ class UserMeResponse(BaseModel):
     id: int
     email: EmailStr
     is_active: bool
+    mfa_enabled: bool = False
     public_key: str
     # Material criptográfico cifrado. É devolvido ao próprio utilizador autenticado
     # para permitir recarregar a chave privada em memória após refresh da página.
@@ -153,3 +166,34 @@ class UserMeResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class MfaLoginVerify(BaseModel):
+    email: EmailStr
+    password: str
+    challenge_id: str
+    code: str = Field(min_length=6, max_length=6)
+
+
+class MfaLoginRecovery(BaseModel):
+    email: EmailStr
+    password: str
+    recovery_key_hash: str
+
+
+class MfaToggleRequestResponse(BaseModel):
+    message: str
+    challenge_id: str
+    dev_mfa_code: str | None = None
+    expires_in_minutes: int = 10
+
+
+class MfaToggleConfirm(BaseModel):
+    enable: bool
+    challenge_id: str | None = None
+    code: str | None = None
+    recovery_key_hash: str | None = None
+
+
+class MfaToggleResponse(BaseModel):
+    mfa_enabled: bool
+    message: str

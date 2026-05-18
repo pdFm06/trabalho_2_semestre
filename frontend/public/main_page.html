@@ -156,6 +156,55 @@
                     </div>
                 </div>
             </div>
+
+            <div class="settings-card card border-0 shadow-sm mt-4">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+                        <div>
+                            <h5 class="card-title mb-1">Autenticação multifator</h5>
+                            <p class="card-text text-muted mb-0">Exige um código adicional no login. Para ativar ou desativar, valide com o código enviado por email ou com a recovery key.</p>
+                        </div>
+                        <span id="mfaStatusBadge" class="badge align-self-start text-bg-secondary">A carregar...</span>
+                    </div>
+
+                    <div id="mfaSettingsAlert" aria-live="polite"></div>
+
+                    <div class="row g-3 align-items-end">
+                        <div class="col-lg-4">
+                            <button type="button" id="requestMfaCodeBtn" class="btn btn-outline-primary w-100">
+                                Enviar código por email
+                            </button>
+                            <div id="mfaDevCodeHelp" class="form-text mt-2"></div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <label for="mfaCodeInput" class="form-label">Código</label>
+                            <input type="text" id="mfaCodeInput" class="form-control" inputmode="numeric" maxlength="6" placeholder="000000">
+                        </div>
+
+                        <div class="col-lg-4">
+                            <button type="button" id="confirmMfaToggleBtn" class="btn btn-primary w-100">
+                                Ativar MFA
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="row g-3 align-items-end">
+                        <div class="col-lg-8">
+                            <label for="mfaRecoveryKeyInput" class="form-label">Recovery key</label>
+                            <textarea id="mfaRecoveryKeyInput" class="form-control" rows="3" placeholder="Use esta opção caso não tenha acesso ao email para receber o código"></textarea>
+                            <div class="form-text">A recovery key serve como alternativa ao código. Não é enviada em claro: o browser envia apenas um hash/verificador.</div>
+                        </div>
+                        <div class="col-lg-4">
+                            <button type="button" id="confirmMfaRecoveryToggleBtn" class="btn btn-outline-primary w-100">
+                                Confirmar com recovery key
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 </main>
@@ -243,12 +292,12 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="layout/layout.js?v=20260518-home-drive-split"></script>
-<script src="js/settings.js?v=20260518-home-drive-split"></script>
-<script src="js/api.js?v=20260518-home-drive-split"></script>
-<script src="js/crypto_utils.js?v=20260518-home-drive-split"></script>
-<script src="js/auth_guard.js?v=20260518-home-drive-split"></script>
-<script src="js/file_upload.js?v=20260518-home-drive-split"></script>
-<script src="js/file_drive.js?v=20260518-home-drive-split"></script>
+<script src="layout/layout.js?v=20260518-mfa"></script>
+<script src="js/settings.js?v=20260518-mfa"></script>
+<script src="js/api.js?v=20260518-mfa"></script>
+<script src="js/crypto_utils.js?v=20260518-mfa"></script>
+<script src="js/auth_guard.js?v=20260518-mfa"></script>
+<script src="js/file_upload.js?v=20260518-mfa"></script>
+<script src="js/file_drive.js?v=20260518-mfa"></script>
 </body>
 </html>

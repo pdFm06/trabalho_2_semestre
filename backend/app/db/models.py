@@ -83,6 +83,24 @@ class User(Base):
     password_reset_code_hash = Column(String, nullable=True)
     password_reset_expires_at = Column(DateTime(timezone=True), nullable=True)
 
+
+    # -------------------------------------------------------------------
+    # MFA
+    # -------------------------------------------------------------------
+    # mfa_enabled indica se o utilizador tem MFA ativo.
+    mfa_enabled = Column(Boolean, nullable=False, default=False, server_default="false")
+
+    # Código temporário usado para login MFA e para ativar/desativar MFA.
+    # Só guardamos o hash do código.
+    mfa_code_hash = Column(String, nullable=True)
+    mfa_code_expires_at = Column(DateTime(timezone=True), nullable=True)
+    mfa_challenge_id = Column(String, nullable=True, index=True)
+    mfa_code_purpose = Column(String(40), nullable=True)
+
+    # Hash da recovery key. A recovery key continua a não ser guardada em claro.
+    # Como a recovery key é aleatória de 256 bits, este hash serve apenas como verificador.
+    recovery_key_hash = Column(String, nullable=True)
+
     # -------------------------------------------------------------------
     # Quotas de armazenamento
     # -------------------------------------------------------------------

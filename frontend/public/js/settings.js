@@ -1,4 +1,5 @@
 const THEME_STORAGE_KEY = "app_theme";
+let pendingMfaToggleChallengeId = null;
 
 function getSavedTheme() {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
@@ -61,6 +62,122 @@ function showHomeView() {
 
 function showSettingsView() {
     showView("settings", "settings");
+    refreshMfaSettings();
+}
+
+function settingsAlert(message, type = "info") {
+    const container = document.getElementById("mfaSettingsAlert");
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${escapeHtmlLocal(message)}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+    `;
+}
+
+function escapeHtmlLocal(value) {
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function refreshMfaSettings() {
+    const enabled = Boolean(window.currentUser?.mfa_enabled);
+    const badge = document.getElementById("mfaStatusBadge");
+    const confirmBtn = document.getElementById("confirmMfaToggleBtn");
+    const recoveryBtn = document.getElementById("confirmMfaRecoveryToggleBtn");
+
+    if (badge) {
+        badge.textContent = enabled ? "Ativo" : "Inativo";
+        badge.className = `badge align-self-start ${enabled ? "text-bg-success" : "text-bg-secondary"}`;
+    }
+
+    if (confirmBtn) {
+        confirmBtn.textContent = enabled ? "Desativar MFA" : "Ativar MFA";
+        confirmBtn.className = enabled ? "btn btn-danger w-100" : "btn btn-primary w-100";
+    }
+
+    if (recoveryBtn) {
+        recoveryBtn.textContent = enabled ? "Desativar com recovery key" : "Ativar com recovery key";
+    }
+}
+
+async function requestMfaCode() {
+    try {
+        const response = await apiRequest("/users/mfa/request-toggle", "POST", {}, true);
+        pendingMfaToggleChallengeId = response.challenge_id;
+
+        const help = document.getElementById("mfaDevCodeHelp");
+        if (help) {
+            help.innerHTML = response.dev_mfa_code
+                ? `Código MFA: <strong>${escapeHtmlLocal(response.dev_mfa_code)}</strong>`
+                : "Código enviado por email. Consulte a caixa de entrada.";
+        }
+
+        settingsAlert("Código MFA enviado por email.", "info");
+    } catch (error) {
+        console.error(error);
+        settingsAlert(`Erro ao gerar código MFA: ${error.message}`, "danger");
+    }
+}
+
+async function confirmMfaToggleWithCode() {
+    const code = document.getElementById("mfaCodeInput")?.value.trim();
+    const enable = !Boolean(window.currentUser?.mfa_enabled);
+
+    if (!pendingMfaToggleChallengeId || !code) {
+        settingsAlert("Primeiro gere um código MFA e introduza-o no campo Código.", "warning");
+        return;
+    }
+
+    try {
+        const response = await apiRequest("/users/mfa/toggle", "POST", {
+            enable,
+            challenge_id: pendingMfaToggleChallengeId,
+            code
+        }, true);
+
+        window.currentUser.mfa_enabled = response.mfa_enabled;
+        pendingMfaToggleChallengeId = null;
+        document.getElementById("mfaCodeInput").value = "";
+        document.getElementById("mfaDevCodeHelp").innerHTML = "";
+        refreshMfaSettings();
+        settingsAlert(response.message, "success");
+    } catch (error) {
+        console.error(error);
+        settingsAlert(`Erro ao alterar MFA: ${error.message}`, "danger");
+    }
+}
+
+async function confirmMfaToggleWithRecoveryKey() {
+    const recoveryKey = document.getElementById("mfaRecoveryKeyInput")?.value.trim();
+    const enable = !Boolean(window.currentUser?.mfa_enabled);
+
+    if (!recoveryKey) {
+        settingsAlert("Introduza a recovery key.", "warning");
+        return;
+    }
+
+    try {
+        const recoveryKeyHash = await recoveryKeyHashForServer(recoveryKey);
+        const response = await apiRequest("/users/mfa/toggle", "POST", {
+            enable,
+            recovery_key_hash: recoveryKeyHash
+        }, true);
+
+        window.currentUser.mfa_enabled = response.mfa_enabled;
+        document.getElementById("mfaRecoveryKeyInput").value = "";
+        refreshMfaSettings();
+        settingsAlert(response.message, "success");
+    } catch (error) {
+        console.error(error);
+        settingsAlert(`Erro ao alterar MFA com recovery key: ${error.message}`, "danger");
+    }
 }
 
 function initThemeSettings() {
@@ -69,8 +186,12 @@ function initThemeSettings() {
     document.getElementById("themeLight")?.addEventListener("change", () => applyTheme("light"));
     document.getElementById("themeDark")?.addEventListener("change", () => applyTheme("dark"));
 
-    // A sidebar é carregada dinamicamente, por isso marcamos o link ativo depois do fetch.
+    document.getElementById("requestMfaCodeBtn")?.addEventListener("click", requestMfaCode);
+    document.getElementById("confirmMfaToggleBtn")?.addEventListener("click", confirmMfaToggleWithCode);
+    document.getElementById("confirmMfaRecoveryToggleBtn")?.addEventListener("click", confirmMfaToggleWithRecoveryKey);
+
     Promise.resolve(window.sidebarLoaded).then(() => setSidebarActiveLink("home"));
+    refreshMfaSettings();
 }
 
 window.applyTheme = applyTheme;
@@ -78,6 +199,7 @@ window.setSidebarActiveLink = setSidebarActiveLink;
 window.showDriveView = showDriveView;
 window.showHomeView = showHomeView;
 window.showSettingsView = showSettingsView;
+window.refreshMfaSettings = refreshMfaSettings;
 
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initThemeSettings);

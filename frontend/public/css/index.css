@@ -801,3 +801,18 @@ html[data-app-theme="dark"] .file-list-row:hover {
     align-items: center;
     max-width: 100%;
 }
+
+
+/* ─── MFA / Definições ─────────────────────────────────────────────── */
+#mfaSettingsAlert .alert {
+    margin-bottom: 1rem;
+}
+
+#mfaStatusBadge {
+    font-size: 0.85rem;
+    padding: 0.55rem 0.8rem;
+}
+
+#mfaRecoveryKeyInput {
+    resize: vertical;
+}

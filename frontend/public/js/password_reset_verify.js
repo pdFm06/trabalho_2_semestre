@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("passwordResetVerifyForm");
     const email = sessionStorage.getItem("password_reset_email");
-    const savedCode = sessionStorage.getItem("password_reset_code");
     const hint = document.getElementById("resetCodeHint");
 
     if (!email) {
@@ -12,8 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    if (hint && savedCode) {
-        hint.textContent = `Código de teste: ${savedCode}`;
+    if (hint) {
+        hint.textContent = "Introduza o código recebido por email.";
         hint.classList.remove("d-none");
     }
 

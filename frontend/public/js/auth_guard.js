@@ -25,6 +25,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         // Atualizar barra de progresso do espaço usado na sidebar.
         updateStorageBar(user.storage_used ?? 0, user.storage_quota ?? 1_073_741_824);
+
+        // Atualizar estado visual das definições/MFA, caso a view já tenha sido carregada.
+        window.refreshMfaSettings?.();
     } catch (error) {
         console.error(error);
         clearAccessToken();

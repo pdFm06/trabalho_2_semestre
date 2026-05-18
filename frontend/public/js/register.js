@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "private_key_iv",
         "encrypted_private_key_recovery",
         "recovery_key_iv",
+        "recovery_key_hash",
         "key_algorithm"
     ];
 

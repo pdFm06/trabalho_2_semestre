@@ -26,6 +26,7 @@ services:
     depends_on:
       - db
 
+
   frontend:
     build: ./frontend
     ports:
@@ -55,6 +56,20 @@ services:
       JWT_SECRET_KEY: dev-only-change-this-secret-key-before-production
       JWT_ALGORITHM: HS256
       KEYSERVER_INTERNAL_URL: http://keyserver:9000
+
+      # Email real. Configura estes valores no ficheiro .env.
+      # O backend só arranca se as variáveis obrigatórias estiverem definidas.
+      SMTP_HOST: ${SMTP_HOST:?Define SMTP_HOST no ficheiro .env}
+      SMTP_PORT: ${SMTP_PORT:?Define SMTP_PORT no ficheiro .env}
+      SMTP_USERNAME: ${SMTP_USERNAME:?Define SMTP_USERNAME no ficheiro .env}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?Define SMTP_PASSWORD no ficheiro .env}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:?Define SMTP_FROM_EMAIL no ficheiro .env}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Cloud Segura}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
+      SMTP_USE_STARTTLS: ${SMTP_USE_STARTTLS:-true}
+      SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-15}
+      SMTP_REQUIRE_REAL_DELIVERY: "true"
+      EMAIL_RETURN_CODES: "false"
 
       # Três nós MinIO independentes. Cada nó tem apenas um bucket.
       # Em produção, estes endpoints poderiam estar em servidores/redes diferentes.

@@ -168,6 +168,7 @@ def create_user(db: Session, user_create: UserCreate):
 
         encrypted_private_key_recovery=user_create.encrypted_private_key_recovery,
         recovery_key_iv=user_create.recovery_key_iv,
+        recovery_key_hash=getattr(user_create, "recovery_key_hash", None),
     )
 
     db.add(db_user)
@@ -252,6 +253,7 @@ def reset_user_password_and_keys(db: Session, user: User, reset_data) -> User:
     user.private_key_iv = reset_data.private_key_iv
     user.encrypted_private_key_recovery = reset_data.encrypted_private_key_recovery
     user.recovery_key_iv = reset_data.recovery_key_iv
+    user.recovery_key_hash = getattr(reset_data, "recovery_key_hash", None)
     user.key_algorithm = reset_data.key_algorithm
 
     user.password_reset_code_hash = None
@@ -302,3 +304,52 @@ def update_file_parts(db: Session, file_id: int, owner_id: int, parts: list[dict
     db.commit()
     db.refresh(db_file)
     return db_file
+
+# ---------------------------------------------------------------------------
+# MFA
+# ---------------------------------------------------------------------------
+
+def set_mfa_code(db: Session, user: User, code_hash: str, expires_at, challenge_id: str, purpose: str) -> User:
+    """Guarda um código MFA temporário. Apenas o hash fica na BD."""
+    user.mfa_code_hash = code_hash
+    user.mfa_code_expires_at = expires_at
+    user.mfa_challenge_id = challenge_id
+    user.mfa_code_purpose = purpose
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def is_mfa_code_expired(user: User) -> bool:
+    from datetime import datetime, timezone
+
+    expires_at = user.mfa_code_expires_at
+    if expires_at is None:
+        return True
+
+    now = datetime.now(timezone.utc)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+
+    return expires_at < now
+
+
+def clear_mfa_code(db: Session, user: User) -> User:
+    user.mfa_code_hash = None
+    user.mfa_code_expires_at = None
+    user.mfa_challenge_id = None
+    user.mfa_code_purpose = None
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def set_mfa_enabled(db: Session, user: User, enabled: bool) -> User:
+    user.mfa_enabled = enabled
+    clear_mfa_code(db, user)
+    db.refresh(user)
+    return user

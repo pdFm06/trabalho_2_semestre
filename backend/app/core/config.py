@@ -23,6 +23,29 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 
+
+
+    # ----------------------------
+    # Email / SMTP
+    # ----------------------------
+    # Configuração SMTP real.
+    # Estes valores devem vir do ficheiro .env ou das variáveis de ambiente do Docker.
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
+    SMTP_PASSWORD: str = os.getenv("SMTP_PASSWORD", "")
+    SMTP_FROM_EMAIL: str = os.getenv("SMTP_FROM_EMAIL", "")
+    SMTP_FROM_NAME: str = os.getenv("SMTP_FROM_NAME", "Cloud Segura")
+    SMTP_USE_TLS: bool = os.getenv("SMTP_USE_TLS", "false").lower() == "true"
+    SMTP_USE_STARTTLS: bool = os.getenv("SMTP_USE_STARTTLS", "true").lower() == "true"
+    SMTP_TIMEOUT_SECONDS: int = int(os.getenv("SMTP_TIMEOUT_SECONDS", "15"))
+
+    # Quando true, impede que códigos sejam enviados para Mailpit/localhost por engano.
+    SMTP_REQUIRE_REAL_DELIVERY: bool = os.getenv("SMTP_REQUIRE_REAL_DELIVERY", "true").lower() == "true"
+
+    # Em produção deve ficar sempre false. Se true, a API devolve códigos nas respostas.
+    EMAIL_RETURN_CODES: bool = os.getenv("EMAIL_RETURN_CODES", "false").lower() == "true"
+
     # ----------------------------
     # Keyserver
     # ----------------------------

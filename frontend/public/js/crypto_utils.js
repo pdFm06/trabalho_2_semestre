@@ -85,6 +85,18 @@ function formatRecoveryKey(recoveryKey) {
     return formatRecoveryKeyForDisplay(recoveryKey);
 }
 
+
+/**
+ * Hash usado pelo backend como verificador da recovery key para MFA.
+ * A recovery key em claro continua a não ser guardada no servidor.
+ */
+async function recoveryKeyHashForServer(recoveryKey) {
+    const normalized = normalizeRecoveryKey(recoveryKey);
+    const data = new TextEncoder().encode(normalized);
+    const digest = await crypto.subtle.digest("SHA-256", data);
+    return arrayBufferToBase64Url(digest);
+}
+
 /**
  * Gera recovery key de 256 bits.
  */
@@ -234,12 +246,14 @@ async function generateUserCryptoMaterial(password) {
 
     const passwordMaterial = await encryptPrivateKeyForPassword(privateKeyRaw, password);
     const recoveryMaterial = await encryptPrivateKeyForRecoveryKey(privateKeyRaw, recoveryKey);
+    const recoveryKeyHash = await recoveryKeyHashForServer(recoveryKey);
 
     return {
         ...passwordMaterial,
         ...recoveryMaterial,
         public_key: arrayBufferToBase64Url(publicKeyRaw),
         key_algorithm: "RSA-OAEP-4096-SHA-256",
+        recovery_key_hash: recoveryKeyHash,
         recovery_key: formatRecoveryKeyForDisplay(recoveryKey)
     };
 }
@@ -265,12 +279,14 @@ async function rebuildUserCryptoMaterialFromRecovery(newPassword, recoveryKey, r
 
     const passwordMaterial = await encryptPrivateKeyForPassword(privateKeyRaw, newPassword);
     const recoveryMaterial = await encryptPrivateKeyForRecoveryKey(privateKeyRaw, newRecoveryKey);
+    const recoveryKeyHash = await recoveryKeyHashForServer(newRecoveryKey);
 
     return {
         ...passwordMaterial,
         ...recoveryMaterial,
         public_key: resetPayload.public_key,
         key_algorithm: resetPayload.key_algorithm || "RSA-OAEP-4096-SHA-256",
+        recovery_key_hash: recoveryKeyHash,
         recovery_key: formatRecoveryKeyForDisplay(newRecoveryKey)
     };
 }

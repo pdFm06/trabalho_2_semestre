@@ -1,3 +1,144 @@
+let pendingMfaLogin = null;
+
+async function completeLogin(password, response) {
+    if (!response?.access_token) {
+        throw new Error("Resposta de login inválida: token em falta.");
+    }
+
+    setAccessToken(response.access_token);
+
+    const privateKey = await decryptUserPrivateKey(password, response);
+    const publicKey = await importUserPublicKey(response.public_key);
+
+    window.cloudCryptoState.privateKey = privateKey;
+    window.cloudCryptoState.publicKey = publicKey;
+
+    showBootstrapAlert("Login efetuado com sucesso. A redirecionar...", "success", { dismissible: false });
+
+    setTimeout(() => {
+        window.location.href = "../main_page.html";
+    }, 700);
+}
+
+function ensureMfaModal() {
+    if (document.getElementById("mfaLoginModal")) return;
+
+    const modalHtml = `
+        <div class="modal fade" id="mfaLoginModal" tabindex="-1" aria-labelledby="mfaLoginModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="mfaLoginModalLabel">Verificação MFA</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="mfaLoginAlert" class="alert alert-info small" role="alert">
+                            Introduza o código recebido por email. Em alternativa, pode usar a recovery key.
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="mfaLoginCode" class="form-label">Código MFA</label>
+                            <input type="text" inputmode="numeric" maxlength="6" class="form-control" id="mfaLoginCode" placeholder="000000">
+                        </div>
+
+                        <hr>
+
+                        <div class="mb-3">
+                            <label for="mfaLoginRecoveryKey" class="form-label">Recovery key</label>
+                            <textarea class="form-control" id="mfaLoginRecoveryKey" rows="3" placeholder="Use esta opção se não tiver acesso ao email"></textarea>
+                            <div class="form-text">Use apenas uma das opções: código MFA ou recovery key.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" id="mfaLoginRecoveryBtn" class="btn btn-outline-primary">Usar recovery key</button>
+                        <button type="button" id="mfaLoginCodeBtn" class="btn btn-primary">Validar código</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+    document.getElementById("mfaLoginCodeBtn")?.addEventListener("click", submitMfaCodeLogin);
+    document.getElementById("mfaLoginRecoveryBtn")?.addEventListener("click", submitMfaRecoveryLogin);
+}
+
+function showMfaModal(response) {
+    ensureMfaModal();
+
+    const codeInput = document.getElementById("mfaLoginCode");
+    const recoveryInput = document.getElementById("mfaLoginRecoveryKey");
+    const alert = document.getElementById("mfaLoginAlert");
+
+    if (codeInput) codeInput.value = "";
+    if (recoveryInput) recoveryInput.value = "";
+
+    if (alert) {
+        alert.innerHTML = response.dev_mfa_code
+            ? `Código MFA: <strong>${response.dev_mfa_code}</strong>`
+            : "Foi enviado um código MFA para o seu email. Introduza-o abaixo ou use a recovery key.";
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("mfaLoginModal"));
+    modal.show();
+}
+
+async function submitMfaCodeLogin() {
+    if (!pendingMfaLogin) return;
+
+    const code = document.getElementById("mfaLoginCode")?.value.trim();
+
+    if (!code) {
+        showBootstrapAlert("Introduza o código MFA.", "warning");
+        return;
+    }
+
+    try {
+        const response = await apiRequest("/users/login/mfa/verify", "POST", {
+            email: pendingMfaLogin.email,
+            password: pendingMfaLogin.password,
+            challenge_id: pendingMfaLogin.challengeId,
+            code
+        });
+
+        bootstrap.Modal.getInstance(document.getElementById("mfaLoginModal"))?.hide();
+        await completeLogin(pendingMfaLogin.password, response);
+        pendingMfaLogin = null;
+    } catch (error) {
+        console.error(error);
+        showBootstrapAlert(`Erro MFA: ${error.message}`, "danger");
+    }
+}
+
+async function submitMfaRecoveryLogin() {
+    if (!pendingMfaLogin) return;
+
+    const recoveryKey = document.getElementById("mfaLoginRecoveryKey")?.value.trim();
+
+    if (!recoveryKey) {
+        showBootstrapAlert("Introduza a recovery key.", "warning");
+        return;
+    }
+
+    try {
+        const recoveryKeyHash = await recoveryKeyHashForServer(recoveryKey);
+        const response = await apiRequest("/users/login/mfa/recovery", "POST", {
+            email: pendingMfaLogin.email,
+            password: pendingMfaLogin.password,
+            recovery_key_hash: recoveryKeyHash
+        });
+
+        bootstrap.Modal.getInstance(document.getElementById("mfaLoginModal"))?.hide();
+        await completeLogin(pendingMfaLogin.password, response);
+        pendingMfaLogin = null;
+    } catch (error) {
+        console.error(error);
+        showBootstrapAlert(`Erro MFA com recovery key: ${error.message}`, "danger");
+    }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("loginForm");
 
@@ -5,6 +146,8 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Formulário de login não encontrado.");
         return;
     }
+
+    ensureMfaModal();
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -19,24 +162,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 { email, password }
             );
 
-            setAccessToken(response.access_token);
+            if (response.mfa_required) {
+                clearAccessToken();
+                pendingMfaLogin = {
+                    email,
+                    password,
+                    challengeId: response.mfa_challenge_id
+                };
+                showMfaModal(response);
+                return;
+            }
 
-            // A chave privada é decifrada no browser e mantida apenas em memória.
-            const privateKey = await decryptUserPrivateKey(password, response);
-            const publicKey = await importUserPublicKey(response.public_key);
-
-            window.cloudCryptoState.privateKey = privateKey;
-            window.cloudCryptoState.publicKey = publicKey;
-
-            // Nunca guardar a password nem a chave privada decifrada em localStorage/sessionStorage.
             document.getElementById("password").value = "";
-
-            console.log("Login efetuado com sucesso. Chave privada carregada em memória.");
-            showBootstrapAlert("Login efetuado com sucesso. A redirecionar...", "success", { dismissible: false });
-
-            setTimeout(() => {
-                window.location.href = "../main_page.html";
-            }, 700);
+            await completeLogin(password, response);
         } catch (error) {
             console.error(error);
             clearAccessToken();
