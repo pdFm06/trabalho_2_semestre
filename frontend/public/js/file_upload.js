@@ -145,6 +145,11 @@ async function uploadEncryptedFileToBackend(file, encryptedMaterial) {
     formData.append("file_iv", encryptedMaterial.file_iv);
     formData.append("original_file_size", String(encryptedMaterial.original_file_size));
 
+    const currentFolderId = window.getCurrentFolderId?.();
+    if (currentFolderId !== null && currentFolderId !== undefined) {
+        formData.append("folder_id", String(currentFolderId));
+    }
+
     const response = await fetch(`${API_BASE_URL}/upload`, {
         method: "POST",
         headers: {
