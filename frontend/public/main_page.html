@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cloud - Início</title>
+    <script>
+        (function () {
+            const savedTheme = localStorage.getItem("app_theme") || "light";
+            document.documentElement.setAttribute("data-bs-theme", savedTheme);
+            document.documentElement.setAttribute("data-app-theme", savedTheme);
+        })();
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="./css/index.css">
 </head>
@@ -11,6 +18,7 @@
     <div id="sidebar-container"></div>
 
 <main>
+    <div id="driveView" class="app-view active-view">
     <section class="container_search">
         <div class="search_box">
             <div class="row align-items-center g-2">
@@ -20,6 +28,7 @@
                     </form>
                 </div>
                 <div class="col-md-6 d-flex align-items-center justify-content-end">
+                    <button id="createFolderBtn" class="btn btn-outline-secondary me-2" type="button" data-bs-toggle="modal" data-bs-target="#folderModal">Nova pasta</button>
                     <button id="addFileBtn" class="button_add_files btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">Adicionar</button>
                 </div>
             </div>
@@ -86,7 +95,10 @@
 
     <section class="container_main">
         <div class="d-flex align-items-center justify-content-between mb-3">
-            <h5 class="mb-0">Os meus ficheiros</h5>
+            <div>
+                <h5 id="driveTitle" class="mb-1">Todos os ficheiros</h5>
+                <nav id="folderBreadcrumb" class="small" aria-label="Navegação por pastas"></nav>
+            </div>
             <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.loadUserFiles?.()">Atualizar</button>
                 <div class="btn-group btn-group-sm" role="group" aria-label="Modo de vista">
@@ -98,6 +110,51 @@
         <div id="filesGrid" class="row">
             <div class="col-12">
                 <div class="alert alert-light border text-muted mb-0">A carregar ficheiros...</div>
+            </div>
+        </div>
+    </section>
+    </div>
+
+    <section id="settingsView" class="app-view settings-view d-none" aria-labelledby="settingsTitle">
+        <div class="settings-page">
+            <div class="settings-header mb-4">
+                <p class="text-uppercase small text-muted mb-1">Definições</p>
+                <h2 id="settingsTitle" class="mb-2">Preferências da aplicação</h2>
+                <p class="text-muted mb-0">Personaliza a experiência visual da cloud neste dispositivo.</p>
+            </div>
+
+            <div class="settings-card card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
+                        <div>
+                            <h5 class="card-title mb-1">Tema</h5>
+                            <p class="card-text text-muted mb-0">Alterna entre modo claro e modo escuro. A escolha fica guardada no browser.</p>
+                        </div>
+                        <div class="theme-toggle-group" role="group" aria-label="Selecionar tema">
+                            <input type="radio" class="btn-check" name="themeOptions" id="themeLight" value="light" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="themeLight">Claro</label>
+
+                            <input type="radio" class="btn-check" name="themeOptions" id="themeDark" value="dark" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="themeDark">Escuro</label>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="theme-preview rounded-4 p-3">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div>
+                                <strong>Pré-visualização</strong>
+                                <div class="small text-muted">Exemplo de cartão no tema selecionado.</div>
+                            </div>
+                            <span class="badge text-bg-primary">Cloud</span>
+                        </div>
+                        <div class="preview-file-row rounded-3 p-3 d-flex align-items-center justify-content-between">
+                            <span>documento_exemplo.pdf</span>
+                            <button type="button" class="btn btn-sm btn-primary" disabled>Download</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -136,12 +193,62 @@
     </div>
 </div>
 
+
+<!-- Modal de criação de pasta -->
+<div class="modal fade" id="folderModal" tabindex="-1" aria-labelledby="folderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="folderCreateForm">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="folderModalLabel">Nova pasta</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="folderCreateLocation" class="small text-muted mb-3">A pasta será criada na localização atual.</p>
+                    <label for="folderNameInput" class="form-label">Nome da pasta</label>
+                    <input type="text" id="folderNameInput" class="form-control" maxlength="120" autocomplete="off" required>
+                    <div id="folderCreateError" class="text-danger small mt-2 d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar pasta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para mover ficheiros -->
+<div class="modal fade" id="moveFileModal" tabindex="-1" aria-labelledby="moveFileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="moveFileForm">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="moveFileModalLabel">Mover ficheiro</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="moveFileName" class="small text-muted mb-3"></p>
+                    <label for="moveFolderSelect" class="form-label">Destino</label>
+                    <select id="moveFolderSelect" class="form-select"></select>
+                    <div id="moveFileError" class="text-danger small mt-2 d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Mover</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="layout/layout.js"></script>
-<script src="js/api.js?v=20260517-fix-upload-fetch"></script>
-<script src="js/crypto_utils.js?v=20260517-fix-upload-fetch"></script>
-<script src="js/auth_guard.js?v=20260517-fix-upload-fetch"></script>
-<script src="js/file_upload.js?v=20260517-fix-upload-fetch"></script>
-<script src="js/file_drive.js?v=20260517-fix-upload-fetch"></script>
+<script src="layout/layout.js?v=20260518-home-drive-split"></script>
+<script src="js/settings.js?v=20260518-home-drive-split"></script>
+<script src="js/api.js?v=20260518-home-drive-split"></script>
+<script src="js/crypto_utils.js?v=20260518-home-drive-split"></script>
+<script src="js/auth_guard.js?v=20260518-home-drive-split"></script>
+<script src="js/file_upload.js?v=20260518-home-drive-split"></script>
+<script src="js/file_drive.js?v=20260518-home-drive-split"></script>
 </body>
 </html>

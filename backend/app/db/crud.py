@@ -1,6 +1,6 @@
 from app.schema.file_schema import File_Create
 from sqlalchemy.orm import Session
-from app.db.models import User, File
+from app.db.models import User, File, Folder
 from app.schema.user_schema import UserCreate
 from app.services.auth_service import hash_password
 
@@ -15,10 +15,101 @@ from app.services.auth_service import hash_password
 
 
 def get_files_by_owner(db: Session, owner_id: int) -> list[File]:
-    return db.query(File).filter(File.owner_id == owner_id).all()
+    return db.query(File).filter(File.owner_id == owner_id).order_by(File.created_at.desc()).all()
+
+
+def get_files_by_owner_and_folder(db: Session, owner_id: int, folder_id: int | None) -> list[File]:
+    query = db.query(File).filter(File.owner_id == owner_id)
+    if folder_id is None:
+        query = query.filter(File.folder_id.is_(None))
+    else:
+        query = query.filter(File.folder_id == folder_id)
+    return query.order_by(File.created_at.desc()).all()
+
+
+def get_folder_by_id_and_owner(db: Session, folder_id: int, owner_id: int) -> Folder | None:
+    return db.query(Folder).filter(Folder.id == folder_id, Folder.owner_id == owner_id).first()
+
+
+def get_folders_by_owner(db: Session, owner_id: int) -> list[Folder]:
+    return db.query(Folder).filter(Folder.owner_id == owner_id).order_by(Folder.parent_id.asc().nullsfirst(), Folder.name.asc()).all()
+
+
+def get_folders_by_owner_and_parent(db: Session, owner_id: int, parent_id: int | None) -> list[Folder]:
+    query = db.query(Folder).filter(Folder.owner_id == owner_id)
+    if parent_id is None:
+        query = query.filter(Folder.parent_id.is_(None))
+    else:
+        query = query.filter(Folder.parent_id == parent_id)
+    return query.order_by(Folder.name.asc()).all()
+
+
+def get_folder_breadcrumbs(db: Session, folder: Folder | None, owner_id: int) -> list[Folder]:
+    breadcrumbs: list[Folder] = []
+    current = folder
+    seen: set[int] = set()
+
+    while current is not None and current.id not in seen:
+        seen.add(current.id)
+        breadcrumbs.append(current)
+        if current.parent_id is None:
+            break
+        current = get_folder_by_id_and_owner(db, current.parent_id, owner_id)
+
+    breadcrumbs.reverse()
+    return breadcrumbs
+
+
+def create_folder(db: Session, owner_id: int, name: str, parent_id: int | None = None) -> Folder:
+    cleaned_name = name.strip()
+
+    existing_query = db.query(Folder).filter(Folder.owner_id == owner_id, Folder.name == cleaned_name)
+    if parent_id is None:
+        existing_query = existing_query.filter(Folder.parent_id.is_(None))
+    else:
+        existing_query = existing_query.filter(Folder.parent_id == parent_id)
+
+    if existing_query.first():
+        raise ValueError("Já existe uma pasta com esse nome nesta localização.")
+
+    db_folder = Folder(name=cleaned_name, owner_id=owner_id, parent_id=parent_id)
+    db.add(db_folder)
+    db.commit()
+    db.refresh(db_folder)
+    return db_folder
+
+
+def folder_has_children(db: Session, owner_id: int, folder_id: int) -> bool:
+    has_files = db.query(File.id).filter(File.owner_id == owner_id, File.folder_id == folder_id).first() is not None
+    has_folders = db.query(Folder.id).filter(Folder.owner_id == owner_id, Folder.parent_id == folder_id).first() is not None
+    return has_files or has_folders
+
+
+def delete_folder(db: Session, owner_id: int, folder_id: int) -> Folder | None:
+    folder = get_folder_by_id_and_owner(db, folder_id, owner_id)
+    if not folder:
+        return None
+    db.delete(folder)
+    db.commit()
+    return folder
 
 def get_file_by_id_and_owner(db: Session, file_id: int, owner_id: int) -> File | None:
     return db.query(File).filter(File.id == file_id, File.owner_id == owner_id).first()
+
+def move_file_to_folder(db: Session, file_id: int, owner_id: int, folder_id: int | None) -> File | None:
+    """Move um ficheiro para outra pasta. folder_id=None representa a raiz."""
+    db_file = get_file_by_id_and_owner(db, file_id, owner_id)
+    if not db_file:
+        return None
+
+    if folder_id is not None and not get_folder_by_id_and_owner(db, folder_id, owner_id):
+        raise ValueError("Pasta de destino não encontrada.")
+
+    db_file.folder_id = folder_id
+    db.commit()
+    db.refresh(db_file)
+    return db_file
+
 
 def toggle_favorite(db: Session, file_id: int, owner_id: int) -> File | None:
     """
@@ -181,6 +272,7 @@ def create_file(db: Session, file_data: File_Create) -> File:
     db_file = File(
         filename=file_data.filename,
         owner_id=file_data.owner_id,
+        folder_id=file_data.folder_id,
         parts=file_data.parts or [],
         encryption_mode=file_data.encryption_mode,
         file_iv=file_data.file_iv,

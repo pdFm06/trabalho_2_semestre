@@ -1,6 +1,17 @@
-from sqlalchemy import Column, Integer, String, DateTime, func, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, func, Boolean, ForeignKey
 from app.db.database import Base
 from sqlalchemy.dialects.postgresql import JSONB
+
+
+class Folder(Base):
+    __tablename__ = "folders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(120), nullable=False)
+    owner_id = Column(Integer, nullable=False, index=True)
+
+    parent_id = Column(Integer, ForeignKey("folders.id", ondelete="CASCADE"), nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class File(Base):
@@ -11,6 +22,9 @@ class File(Base):
 
     # owner_id referencia o id do utilizador autenticado.
     owner_id = Column(Integer, nullable=False, index=True)
+
+    # Pasta onde o ficheiro está localizado. None representa a raiz da Drive.
+    folder_id = Column(Integer, ForeignKey("folders.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # parts guarda a informação de onde estão as partes no MinIO em formato JSON.
     # Ex: [{"bucket": "bucket-part-0", "object_name": "uuid_part0"}, ...]
