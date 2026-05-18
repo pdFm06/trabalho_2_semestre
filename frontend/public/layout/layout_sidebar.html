@@ -14,16 +14,23 @@
 
     <ul class="menu">
         <li>
-            <a href="#" class="sidebar-main-link active" data-app-view-link="home"
-               onclick="window.showHomeView?.(); window.setFavoriteFilter?.(false); window._favActive=false;">
+            <a href="#" onclick="window.setFavoriteFilter?.(false); window._favActive=false;">
                 <img class="imagem_side_bar" src="./img/home_page/home.png" alt="Ícone de Início"> Início
             </a>
         </li>
         <li>
-            <a href="#" class="sidebar-main-link" data-app-view-link="drive"
-               onclick="window.showDriveView?.(); window.setFavoriteFilter?.(false); window._favActive=false;">
+            <a href="#" onclick="window.setFavoriteFilter?.(false); window._favActive=false;">
                 <img class="imagem_side_bar" src="./img/home_page/hdd.png" alt="Ícone de Cloud"> Drive
             </a>
+            <div class="drive-sidebar-actions px-3 pb-2">
+                <button id="sidebarCreateFolderBtn" class="btn btn-sm btn-outline-light w-100" type="button"
+                        data-bs-toggle="modal" data-bs-target="#folderModal">
+                    + Nova pasta
+                </button>
+            </div>
+            <div id="sidebarFolderTree" class="sidebar-folder-tree px-2 pb-2">
+                <div class="small text-muted px-2">A carregar pastas...</div>
+            </div>
         </li>
         <li>
             <a href="#" class="sidebar-main-link" data-app-view-link="settings" onclick="window.showSettingsView?.();">
