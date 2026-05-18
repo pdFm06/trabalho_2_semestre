@@ -187,6 +187,13 @@ async function loadUserFiles() {
     try {
         currentFiles = await apiRequest("/files", "GET", null, true);
         filterFiles();
+
+        // Recalcular espaço usado a partir da lista actual e atualizar a barra.
+        const totalUsed = currentFiles.reduce((sum, f) => sum + (f.file_size || 0), 0);
+        if (window.currentUser) {
+            window.currentUser.storage_used = totalUsed;
+            window.updateStorageBar?.(totalUsed, window.currentUser.storage_quota ?? 1_073_741_824);
+        }
     } catch (error) {
         console.error(error);
         filesGrid.innerHTML = `
