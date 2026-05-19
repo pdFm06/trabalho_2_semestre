@@ -886,11 +886,57 @@ async function toggleFavorite(fileId) {
 
 // ─── Delete ─────────────────────────────────────────────────────────────────
 
+/**
+ * Mostra o modal de confirmação de eliminação.
+ * Devolve uma Promise que resolve com true (confirmar) ou false (cancelar).
+ */
+function confirmDelete(filename) {
+    return new Promise((resolve) => {
+        const modalEl  = document.getElementById("confirmDeleteModal");
+        const message  = document.getElementById("confirmDeleteMessage");
+        const confirmBtn = document.getElementById("confirmDeleteBtn");
+
+        if (!modalEl || !confirmBtn) {
+            // Fallback para o confirm nativo se o modal não existir
+            resolve(window.confirm(`Tem a certeza que quer eliminar "${filename}"?`));
+            return;
+        }
+
+        if (message) {
+            message.textContent = `Tem a certeza que quer eliminar "${filename}"?`;
+        }
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+        const onConfirm = () => {
+            cleanup();
+            modal.hide();
+            resolve(true);
+        };
+
+        const onDismiss = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        const cleanup = () => {
+            confirmBtn.removeEventListener("click", onConfirm);
+            modalEl.removeEventListener("hidden.bs.modal", onDismiss);
+        };
+
+        confirmBtn.addEventListener("click", onConfirm);
+        modalEl.addEventListener("hidden.bs.modal", onDismiss);
+
+        modal.show();
+    });
+}
+
 async function deleteFile(fileId) {
     const file = currentFiles.find((item) => Number(item.id) === Number(fileId));
     const filename = file?.filename || `ficheiro #${fileId}`;
 
-    if (!confirm(`Tem a certeza que quer eliminar "${filename}"?\n\nEsta ação é irreversível.`)) return;
+    const confirmed = await confirmDelete(filename);
+    if (!confirmed) return;
 
     try {
         await apiRequest(`/delete?file_id=${encodeURIComponent(fileId)}`, "DELETE", null, true);

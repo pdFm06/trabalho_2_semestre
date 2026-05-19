@@ -15,15 +15,6 @@
     <link rel="stylesheet" href="./css/index.css">
 </head>
 <body>
-    <!-- Botão hamburger — só aparece em mobile -->
-    <button id="hamburgerBtn" aria-label="Abrir menu" onclick="window.toggleSidebar?.()">
-        <span></span>
-        <span></span>
-        <span></span>
-    </button>
-
-    <!-- Overlay escuro quando sidebar está aberta em mobile -->
-    <div id="sidebarOverlay" onclick="window.toggleSidebar?.()"></div>
     <div id="sidebar-container"></div>
 
 <main>
@@ -299,6 +290,30 @@
                     <button type="submit" class="btn btn-primary">Mover</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Eliminação -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">
+                    🗑 Eliminar ficheiro
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmDeleteMessage" class="mb-1"></p>
+                <p class="text-danger small mb-0">
+                    <strong>Esta ação é irreversível.</strong>
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Eliminar</button>
+            </div>
         </div>
     </div>
 </div>
