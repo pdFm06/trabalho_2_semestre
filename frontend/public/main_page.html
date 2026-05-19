@@ -15,6 +15,15 @@
     <link rel="stylesheet" href="./css/index.css">
 </head>
 <body>
+    <!-- Botão hamburger — só aparece em mobile -->
+    <button id="hamburgerBtn" aria-label="Abrir menu" onclick="window.toggleSidebar?.()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Overlay escuro quando sidebar está aberta em mobile -->
+    <div id="sidebarOverlay" onclick="window.toggleSidebar?.()"></div>
     <div id="sidebar-container"></div>
 
 <main>
@@ -24,7 +33,7 @@
             <div class="row align-items-center g-2">
                 <div class="col-md-6">
                     <form class="search_box" action="/search" method="get">
-                        <input id="fileSearchInput" type="search" name="Pesquisa" placeholder="Pesquisar ficheiros...">
+                        <input id="fileSearchInput" type="search" name="Pesquisa" placeholder="Pesquisar ficheiros... (ex: .pdf, .mp4, .zip)">
                     </form>
                 </div>
                 <div class="col-md-6 d-flex align-items-center justify-content-end">
@@ -41,28 +50,7 @@
                         <div class="collapse navbar-collapse">
                             <ul class="navbar-nav">
 
-                                <li class="nav-item dropdown">
-                                    <button class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                        Tipo
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-dark">
-                                        <li><a class="dropdown-item" href="#">Action</a></li>
-                                        <li><a class="dropdown-item" href="#">Another action</a></li>
-                                        <li><a class="dropdown-item" href="#">Something else here</a></li>
-                                    </ul>
-                                </li>
-
-                                <li class="nav-item dropdown">
-                                    <button class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                        Modificado
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-dark">
-                                        <li><a class="dropdown-item" href="#">Action</a></li>
-                                        <li><a class="dropdown-item" href="#">Another action</a></li>
-                                        <li><a class="dropdown-item" href="#">Something else here</a></li>
-                                    </ul>
-                                </li>
-
+                                <!-- Filtro de favoritos -->
                                 <li class="nav-item dropdown">
                                     <button class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                         Favoritos
@@ -78,6 +66,46 @@
                                             <a class="dropdown-item" href="#"
                                                onclick="window.setFavoriteFilter?.(true); window._favActive=true;">
                                                 Apenas favoritos
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+
+                                <!-- Filtro por tipo -->
+                                <li class="nav-item dropdown">
+                                    <button class="btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span id="btnTipoLabel">Tipo</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-dark">
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="window.setTypeFilter?.(null)">
+                                                Todos
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="window.setTypeFilter?.('pdf')">
+                                                 PDF
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="window.setTypeFilter?.('image')">
+                                                 Imagem
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="window.setTypeFilter?.('video')">
+                                                 Vídeo
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="window.setTypeFilter?.('zip')">
+                                                 ZIP
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="window.setTypeFilter?.('document')">
+                                                 Documento
                                             </a>
                                         </li>
                                     </ul>
@@ -100,7 +128,6 @@
                 <nav id="folderBreadcrumb" class="small" aria-label="Navegação por pastas"></nav>
             </div>
             <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.loadUserFiles?.()">Atualizar</button>
                 <div class="btn-group btn-group-sm" role="group" aria-label="Modo de vista">
                     <button type="button" id="btnViewGrid" class="btn btn-secondary" title="Vista em grelha" onclick="window.setView?.('grid')">▦</button>
                     <button type="button" id="btnViewList" class="btn btn-outline-secondary" title="Vista em lista" onclick="window.setView?.('list')">☰</button>
@@ -138,23 +165,8 @@
                             <label class="btn btn-outline-primary" for="themeDark">Escuro</label>
                         </div>
                     </div>
-
-                    <hr class="my-4">
-
-                    <div class="theme-preview rounded-4 p-3">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <div>
-                                <strong>Pré-visualização</strong>
-                                <div class="small text-muted">Exemplo de cartão no tema selecionado.</div>
-                            </div>
-                            <span class="badge text-bg-primary">Cloud</span>
-                        </div>
-                        <div class="preview-file-row rounded-3 p-3 d-flex align-items-center justify-content-between">
-                            <span>documento_exemplo.pdf</span>
-                            <button type="button" class="btn btn-sm btn-primary" disabled>Download</button>
-                        </div>
-                    </div>
                 </div>
+            </div>
             </div>
 
             <div class="settings-card card border-0 shadow-sm mt-4">

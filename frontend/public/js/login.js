@@ -20,6 +20,23 @@ async function completeLogin(password, response) {
     }, 700);
 }
 
+// ── Utilitário: mostrar erro DENTRO do modal MFA ──────────────────────────────
+function showMfaError(message) {
+    const alertEl = document.getElementById("mfaLoginAlert");
+    if (alertEl) {
+        alertEl.className = "alert alert-danger small";
+        alertEl.textContent = message;
+    }
+}
+
+function resetMfaAlert() {
+    const alertEl = document.getElementById("mfaLoginAlert");
+    if (alertEl) {
+        alertEl.className = "alert alert-info small";
+        alertEl.textContent = "Introduza o código recebido por email. Em alternativa, pode usar a recovery key.";
+    }
+}
+
 function ensureMfaModal() {
     if (document.getElementById("mfaLoginModal")) return;
 
@@ -68,17 +85,22 @@ function ensureMfaModal() {
 function showMfaModal(response) {
     ensureMfaModal();
 
-    const codeInput = document.getElementById("mfaLoginCode");
+    const codeInput    = document.getElementById("mfaLoginCode");
     const recoveryInput = document.getElementById("mfaLoginRecoveryKey");
-    const alert = document.getElementById("mfaLoginAlert");
 
-    if (codeInput) codeInput.value = "";
+    if (codeInput)     codeInput.value = "";
     if (recoveryInput) recoveryInput.value = "";
 
-    if (alert) {
-        alert.innerHTML = response.dev_mfa_code
-            ? `Código MFA: <strong>${response.dev_mfa_code}</strong>`
-            : "Foi enviado um código MFA para o seu email. Introduza-o abaixo ou use a recovery key.";
+    // Resetar alerta para estado informativo
+    resetMfaAlert();
+
+    // Em modo dev, mostrar o código directamente no alerta
+    if (response.dev_mfa_code) {
+        const alertEl = document.getElementById("mfaLoginAlert");
+        if (alertEl) {
+            alertEl.className = "alert alert-info small";
+            alertEl.innerHTML = `Código MFA: <strong>${response.dev_mfa_code}</strong>`;
+        }
     }
 
     const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("mfaLoginModal"));
@@ -91,14 +113,14 @@ async function submitMfaCodeLogin() {
     const code = document.getElementById("mfaLoginCode")?.value.trim();
 
     if (!code) {
-        showBootstrapAlert("Introduza o código MFA.", "warning");
+        showMfaError("Introduz o código MFA antes de validar.");
         return;
     }
 
     try {
         const response = await apiRequest("/users/login/mfa/verify", "POST", {
-            email: pendingMfaLogin.email,
-            password: pendingMfaLogin.password,
+            email:        pendingMfaLogin.email,
+            password:     pendingMfaLogin.password,
             challenge_id: pendingMfaLogin.challengeId,
             code
         });
@@ -108,7 +130,7 @@ async function submitMfaCodeLogin() {
         pendingMfaLogin = null;
     } catch (error) {
         console.error(error);
-        showBootstrapAlert(`Erro MFA: ${error.message}`, "danger");
+        showMfaError("Código MFA inválido ou expirado. Tenta novamente.");
     }
 }
 
@@ -118,15 +140,15 @@ async function submitMfaRecoveryLogin() {
     const recoveryKey = document.getElementById("mfaLoginRecoveryKey")?.value.trim();
 
     if (!recoveryKey) {
-        showBootstrapAlert("Introduza a recovery key.", "warning");
+        showMfaError("Introduz a recovery key antes de continuar.");
         return;
     }
 
     try {
         const recoveryKeyHash = await recoveryKeyHashForServer(recoveryKey);
         const response = await apiRequest("/users/login/mfa/recovery", "POST", {
-            email: pendingMfaLogin.email,
-            password: pendingMfaLogin.password,
+            email:             pendingMfaLogin.email,
+            password:          pendingMfaLogin.password,
             recovery_key_hash: recoveryKeyHash
         });
 
@@ -135,7 +157,7 @@ async function submitMfaRecoveryLogin() {
         pendingMfaLogin = null;
     } catch (error) {
         console.error(error);
-        showBootstrapAlert(`Erro MFA com recovery key: ${error.message}`, "danger");
+        showMfaError("Recovery key inválida ou expirada. Confirma se copiaste a chave completa.");
     }
 }
 
@@ -152,15 +174,11 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const email = document.getElementById("email").value.trim().toLowerCase();
+        const email    = document.getElementById("email").value.trim().toLowerCase();
         const password = document.getElementById("password").value;
 
         try {
-            const response = await apiRequest(
-                "/users/login",
-                "POST",
-                { email, password }
-            );
+            const response = await apiRequest("/users/login", "POST", { email, password });
 
             if (response.mfa_required) {
                 clearAccessToken();
@@ -178,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) {
             console.error(error);
             clearAccessToken();
-            showBootstrapAlert(`Erro no login: ${error.message}`, "danger");
+            showBootstrapAlert("Email ou password inválidos.", "danger");
         }
     });
 });

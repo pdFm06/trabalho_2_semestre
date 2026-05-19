@@ -26,7 +26,8 @@ let selectedMoveFileId = null;
 let isDownloading = false;
 let currentView = "grid";
 let showOnlyFavorites = false;
-let currentSection = "home"; // "home" mostra todos os ficheiros; "drive" mostra pastas e ficheiros da pasta atual.
+let currentTypeFilter = null; // null = todos; "pdf" | "video" | "image" | "zip" | "document" | "other"
+let currentSection = "home";
 
 // ─── Utilitários ────────────────────────────────────────────────────────────
 
@@ -69,6 +70,20 @@ function getFileIcon(filename) {
         return "./img/main_page/pdf.png";
     }
     return "./img/main_page/download.png";
+}
+
+/**
+ * Categoriza um ficheiro pelo seu tipo para o filtro "Tipo".
+ * Devolve: "pdf" | "video" | "image" | "zip" | "document" | "other"
+ */
+function getFileTypeCategory(filename) {
+    const lower = String(filename || "").toLowerCase();
+    if (lower.endsWith(".pdf")) return "pdf";
+    if ([".mp4", ".mov", ".avi", ".mkv", ".webm"].some((ext) => lower.endsWith(ext))) return "video";
+    if ([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".bmp"].some((ext) => lower.endsWith(ext))) return "image";
+    if ([".zip", ".rar", ".7z", ".tar", ".gz", ".bz2"].some((ext) => lower.endsWith(ext))) return "zip";
+    if ([".doc", ".docx", ".txt", ".odt", ".rtf", ".ppt", ".pptx", ".xls", ".xlsx"].some((ext) => lower.endsWith(ext))) return "document";
+    return "other";
 }
 
 function getCurrentFolderId() {
@@ -171,7 +186,8 @@ async function loadAllFolders() {
 function renderFolderCards(folders = currentFolders) {
     return folders.map((folder) => `
         <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
-            <div class="caixa folder-card h-100" data-folder-id="${folder.id}">
+            <div class="caixa folder-card h-100" data-folder-id="${folder.id}"
+                 data-drop-folder-id="${folder.id}">
                 <button type="button" class="folder-open-btn w-100 text-start"
                         data-open-folder-id="${folder.id}"
                         title="Abrir ${driveEscapeHTML(folder.name)}">
@@ -286,7 +302,8 @@ function renderFileCards(files = currentFiles) {
         const favIcon  = file.is_favorite ? "⭐" : "☆";
         return `
             <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
-                <div class="caixa file-card h-100" data-file-id="${file.id}">
+                <div class="caixa file-card h-100" data-file-id="${file.id}"
+                     draggable="true" data-drag-file-id="${file.id}">
                     <div class="nome_ficheiro">
                         <p class="mb-0 fw-semibold text-truncate" title="${driveEscapeHTML(file.filename)}">
                             ${driveEscapeHTML(file.filename)}
@@ -393,13 +410,29 @@ function renderHomeFiles(files = currentFiles) {
 function filterCurrentView() {
     const query = String(fileSearchInput?.value || "").trim().toLowerCase();
 
+    // Se a pesquisa começa com "." trata-a como filtro de extensão.
+    // Ex: ".pdf" mostra só PDFs; ".mp4" mostra só vídeos; ".zip" só ZIPs.
+    const isExtSearch = query.startsWith(".");
+
     if (currentSection === "drive") {
         let filteredFolders = currentFolders;
-        let filteredFiles = currentFiles;
+        let filteredFiles   = showOnlyFavorites
+            ? currentFiles.filter((f) => f.is_favorite)
+            : currentFiles;
+
+        if (currentTypeFilter) {
+            filteredFiles = filteredFiles.filter((f) => getFileTypeCategory(f.filename) === currentTypeFilter);
+        }
 
         if (query) {
-            filteredFolders = filteredFolders.filter((f) => String(f.name || "").toLowerCase().includes(query));
-            filteredFiles = filteredFiles.filter((f) => String(f.filename || "").toLowerCase().includes(query));
+            if (isExtSearch) {
+                filteredFiles = filteredFiles.filter((f) =>
+                    String(f.filename || "").toLowerCase().endsWith(query)
+                );
+            } else {
+                filteredFolders = filteredFolders.filter((f) => String(f.name     || "").toLowerCase().includes(query));
+                filteredFiles   = filteredFiles.filter((f)   => String(f.filename || "").toLowerCase().includes(query));
+            }
         }
 
         renderDriveContents(filteredFolders, filteredFiles);
@@ -410,8 +443,20 @@ function filterCurrentView() {
         ? currentFiles.filter((f) => f.is_favorite)
         : currentFiles;
 
+    if (currentTypeFilter) {
+        filteredFiles = filteredFiles.filter((f) => getFileTypeCategory(f.filename) === currentTypeFilter);
+    }
+
     if (query) {
-        filteredFiles = filteredFiles.filter((f) => String(f.filename || "").toLowerCase().includes(query));
+        if (isExtSearch) {
+            filteredFiles = filteredFiles.filter((f) =>
+                String(f.filename || "").toLowerCase().endsWith(query)
+            );
+        } else {
+            filteredFiles = filteredFiles.filter((f) =>
+                String(f.filename || "").toLowerCase().includes(query)
+            );
+        }
     }
 
     renderHomeFiles(filteredFiles);
@@ -864,6 +909,118 @@ async function deleteFile(fileId) {
     }
 }
 
+// ─── Drag & Drop — mover ficheiros para pastas ──────────────────────────────
+
+filesGrid?.addEventListener("dragstart", (event) => {
+    const card = event.target.closest("[data-drag-file-id]");
+    if (!card) return;
+    event.dataTransfer.setData("text/plain", card.dataset.dragFileId);
+    event.dataTransfer.effectAllowed = "move";
+    card.style.opacity = "0.5";
+});
+
+filesGrid?.addEventListener("dragend", (event) => {
+    const card = event.target.closest("[data-drag-file-id]");
+    if (card) card.style.opacity = "1";
+});
+
+filesGrid?.addEventListener("dragover", (event) => {
+    const folderCard = event.target.closest("[data-drop-folder-id]");
+    if (!folderCard) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    folderCard.style.outline = "2px solid #0d6efd";
+    folderCard.style.background = "#e8f0fe";
+});
+
+filesGrid?.addEventListener("dragleave", (event) => {
+    const folderCard = event.target.closest("[data-drop-folder-id]");
+    if (!folderCard) return;
+    // Só limpar se sair mesmo da pasta (não de um filho)
+    if (!folderCard.contains(event.relatedTarget)) {
+        folderCard.style.outline = "";
+        folderCard.style.background = "";
+    }
+});
+
+filesGrid?.addEventListener("drop", async (event) => {
+    const folderCard = event.target.closest("[data-drop-folder-id]");
+    if (!folderCard) return;
+    event.preventDefault();
+    folderCard.style.outline = "";
+    folderCard.style.background = "";
+
+    const fileId = event.dataTransfer.getData("text/plain");
+    const folderId = normalizeFolderId(folderCard.dataset.dropFolderId);
+    if (!fileId) return;
+
+    const file = currentFiles.find((f) => Number(f.id) === Number(fileId));
+    const folder = allFolders.find((f) => Number(f.id) === Number(folderId));
+    const folderName = folder?.name || `pasta #${folderId}`;
+
+    try {
+        await apiRequest(`/files/${encodeURIComponent(fileId)}/move`, "PATCH", {
+            folder_id: folderId
+        }, true);
+
+        showAlert?.(`"${driveEscapeHTML(file?.filename || fileId)}" movido para "${driveEscapeHTML(folderName)}".`, "success");
+
+        if (currentSection === "drive") {
+            await loadDriveFolders(currentFolderId);
+        } else {
+            await loadHomeFiles();
+        }
+    } catch (error) {
+        console.error(error);
+        showAlert?.(`Erro ao mover ficheiro: ${error.message}`, "danger", false);
+    }
+});
+
+// ─── Drag & Drop no breadcrumb — mover ficheiros para pastas acima ──────────
+
+folderBreadcrumb?.addEventListener("dragover", (event) => {
+    const link = event.target.closest("[data-folder-open]");
+    if (!link) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    link.style.outline = "2px solid #0d6efd";
+    link.style.borderRadius = "4px";
+});
+
+folderBreadcrumb?.addEventListener("dragleave", (event) => {
+    const link = event.target.closest("[data-folder-open]");
+    if (link && !link.contains(event.relatedTarget)) {
+        link.style.outline = "";
+    }
+});
+
+folderBreadcrumb?.addEventListener("drop", async (event) => {
+    const link = event.target.closest("[data-folder-open]");
+    if (!link) return;
+    event.preventDefault();
+    link.style.outline = "";
+
+    const fileId = event.dataTransfer.getData("text/plain");
+    if (!fileId) return;
+
+    const rawFolderId = link.dataset.folderOpen; // "root" ou ID numérico
+    const targetFolderId = normalizeFolderId(rawFolderId);
+    const file = currentFiles.find((f) => Number(f.id) === Number(fileId));
+    const destName = targetFolderId === null ? "Drive (raiz)" : link.textContent.trim();
+
+    try {
+        await apiRequest(`/files/${encodeURIComponent(fileId)}/move`, "PATCH", {
+            folder_id: targetFolderId
+        }, true);
+
+        showAlert?.(`"${driveEscapeHTML(file?.filename || fileId)}" movido para "${driveEscapeHTML(destName)}".`, "success");
+        await loadDriveFolders(currentFolderId);
+    } catch (error) {
+        console.error(error);
+        showAlert?.(`Erro ao mover ficheiro: ${error.message}`, "danger", false);
+    }
+});
+
 // ─── Event listeners ────────────────────────────────────────────────────────
 
 filesGrid?.addEventListener("click", (event) => {
@@ -931,5 +1088,20 @@ window.setView = function (mode) {
 
 window.setFavoriteFilter = function (onlyFavorites) {
     showOnlyFavorites = !!onlyFavorites;
+    filterCurrentView();
+};
+
+window.setTypeFilter = function (type) {
+    // type: null | "pdf" | "image" | "video" | "zip" | "document"
+    currentTypeFilter = type || null;
+
+    // Actualizar o label do botão Tipo com o filtro activo.
+    const labels = {
+        null: "Tipo", pdf: "Tipo: PDF", image: "Tipo: Imagem",
+        video: "Tipo: Vídeo", zip: "Tipo: ZIP", document: "Tipo: Documento"
+    };
+    const btn = document.getElementById("btnTipoLabel");
+    if (btn) btn.textContent = labels[type] ?? "Tipo";
+
     filterCurrentView();
 };

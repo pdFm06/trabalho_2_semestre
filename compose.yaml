@@ -2,16 +2,15 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_DB: db
-      POSTGRES_USER: Projeto2Ano
-      POSTGRES_PASSWORD: 4N^iT9qNyRBLcHNvhFOw7H*oAB!1mU
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
-    # verifica se o postgres esta pronto antes de arrancar o backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U Projeto2Ano -d db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -19,13 +18,12 @@ services:
   pgadmin:
     image: dpage/pgadmin4
     environment:
-      PGADMIN_DEFAULT_EMAIL: Projeto2Ano@gmail.com
-      PGADMIN_DEFAULT_PASSWORD: 4N^iT9qNyRBLcHNvhFOw7H*oAB!1mU
+      PGADMIN_DEFAULT_EMAIL:    ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
       - "5080:80"
     depends_on:
       - db
-
 
   frontend:
     build: ./frontend
@@ -38,9 +36,6 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
-    # O backend só arranca depois do Postgres estar pronto.
-    # As instâncias MinIO têm retry no código Python, porque service_started
-    # não garante que o serviço S3 já esteja pronto para receber pedidos.
     depends_on:
       db:
         condition: service_healthy
@@ -50,58 +45,53 @@ services:
         condition: service_started
       minio3:
         condition: service_started
-
     environment:
-      DATABASE_URL: postgresql://Projeto2Ano:4N^iT9qNyRBLcHNvhFOw7H*oAB!1mU@db:5432/db
-      JWT_SECRET_KEY: dev-only-change-this-secret-key-before-production
-      JWT_ALGORITHM: HS256
-      KEYSERVER_INTERNAL_URL: http://keyserver:9000
+      DATABASE_URL:           ${DATABASE_URL}
+      JWT_SECRET_KEY:         ${JWT_SECRET_KEY}
+      JWT_ALGORITHM:          ${JWT_ALGORITHM}
+      KEYSERVER_INTERNAL_URL: ${KEYSERVER_INTERNAL_URL}
 
-      # Email real. Configura estes valores no ficheiro .env.
-      # O backend só arranca se as variáveis obrigatórias estiverem definidas.
-      SMTP_HOST: ${SMTP_HOST:?Define SMTP_HOST no ficheiro .env}
-      SMTP_PORT: ${SMTP_PORT:?Define SMTP_PORT no ficheiro .env}
-      SMTP_USERNAME: ${SMTP_USERNAME:?Define SMTP_USERNAME no ficheiro .env}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:?Define SMTP_PASSWORD no ficheiro .env}
-      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:?Define SMTP_FROM_EMAIL no ficheiro .env}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Cloud Segura}
-      SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
-      SMTP_USE_STARTTLS: ${SMTP_USE_STARTTLS:-true}
-      SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-15}
+      SMTP_HOST:                  ${SMTP_HOST}
+      SMTP_PORT:                  ${SMTP_PORT}
+      SMTP_USERNAME:              ${SMTP_USERNAME}
+      SMTP_PASSWORD:              ${SMTP_PASSWORD}
+      SMTP_FROM_EMAIL:            ${SMTP_FROM_EMAIL}
+      SMTP_FROM_NAME:             ${SMTP_FROM_NAME:-Cloud Segura}
+      SMTP_USE_TLS:               ${SMTP_USE_TLS:-false}
+      SMTP_USE_STARTTLS:          ${SMTP_USE_STARTTLS:-true}
+      SMTP_TIMEOUT_SECONDS:       ${SMTP_TIMEOUT_SECONDS:-15}
       SMTP_REQUIRE_REAL_DELIVERY: "true"
-      EMAIL_RETURN_CODES: "false"
+      EMAIL_RETURN_CODES:         "false"
 
-      # Três nós MinIO independentes. Cada nó tem apenas um bucket.
-      # Em produção, estes endpoints poderiam estar em servidores/redes diferentes.
-      MINIO_1_ENDPOINT: minio1:9000
-      MINIO_1_ACCESS_KEY: minio1
-      MINIO_1_SECRET_KEY: minio123
-      MINIO_1_BUCKET: cloud-part-1
+      MINIO_1_ENDPOINT:   ${MINIO_1_ENDPOINT}
+      MINIO_1_ACCESS_KEY: ${MINIO_1_ACCESS_KEY}
+      MINIO_1_SECRET_KEY: ${MINIO_1_SECRET_KEY}
+      MINIO_1_BUCKET:     ${MINIO_1_BUCKET}
 
-      MINIO_2_ENDPOINT: minio2:9000
-      MINIO_2_ACCESS_KEY: minio2
-      MINIO_2_SECRET_KEY: minio123
-      MINIO_2_BUCKET: cloud-part-2
+      MINIO_2_ENDPOINT:   ${MINIO_2_ENDPOINT}
+      MINIO_2_ACCESS_KEY: ${MINIO_2_ACCESS_KEY}
+      MINIO_2_SECRET_KEY: ${MINIO_2_SECRET_KEY}
+      MINIO_2_BUCKET:     ${MINIO_2_BUCKET}
 
-      MINIO_3_ENDPOINT: minio3:9000
-      MINIO_3_ACCESS_KEY: minio3
-      MINIO_3_SECRET_KEY: minio123
-      MINIO_3_BUCKET: cloud-part-3
+      MINIO_3_ENDPOINT:   ${MINIO_3_ENDPOINT}
+      MINIO_3_ACCESS_KEY: ${MINIO_3_ACCESS_KEY}
+      MINIO_3_SECRET_KEY: ${MINIO_3_SECRET_KEY}
+      MINIO_3_BUCKET:     ${MINIO_3_BUCKET}
 
       MINIO_SECURE: "false"
 
   keydb:
     image: postgres:16
     environment:
-      POSTGRES_DB: keydb
-      POSTGRES_USER: keyuser
-      POSTGRES_PASSWORD: keypassword
+      POSTGRES_DB:       ${KEYDB_DB}
+      POSTGRES_USER:     ${KEYDB_USER}
+      POSTGRES_PASSWORD: ${KEYDB_PASSWORD}
     volumes:
       - keydb_data:/var/lib/postgresql/data
     ports:
       - "5434:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keyuser -d keydb"]
+      test: ["CMD-SHELL", "pg_isready -U ${KEYDB_USER} -d ${KEYDB_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -113,18 +103,17 @@ services:
     depends_on:
       keydb:
         condition: service_healthy
-
     environment:
-      DATABASE_URL: postgresql://keyuser:keypassword@keydb:5432/keydb
-      JWT_SECRET_KEY: dev-only-change-this-secret-key-before-production
-      JWT_ALGORITHM: HS256
+      DATABASE_URL:   ${KEYDB_URL}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_ALGORITHM:  ${JWT_ALGORITHM}
 
   minio1:
     image: minio/minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minio1
-      MINIO_ROOT_PASSWORD: minio123
+      MINIO_ROOT_USER:     ${MINIO_1_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_1_SECRET_KEY}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -135,8 +124,8 @@ services:
     image: minio/minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minio2
-      MINIO_ROOT_PASSWORD: minio123
+      MINIO_ROOT_USER:     ${MINIO_2_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_2_SECRET_KEY}
     ports:
       - "9010:9000"
       - "9011:9001"
@@ -147,8 +136,8 @@ services:
     image: minio/minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minio3
-      MINIO_ROOT_PASSWORD: minio123
+      MINIO_ROOT_USER:     ${MINIO_3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_3_SECRET_KEY}
     ports:
       - "9020:9000"
       - "9021:9001"

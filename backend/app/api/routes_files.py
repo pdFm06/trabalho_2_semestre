@@ -47,6 +47,13 @@ async def upload_file(
             detail="Tamanho original inválido.",
         )
 
+    # Verificar se o utilizador tem espaço suficiente antes de aceitar o ficheiro.
+    if (current_user.storage_used or 0) + len(data) > (current_user.storage_quota or 1_073_741_824):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Espaço de armazenamento insuficiente. Elimina ficheiros para libertar espaço.",
+        )
+
     if folder_id is not None and not crud.get_folder_by_id_and_owner(db, folder_id, current_user.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
