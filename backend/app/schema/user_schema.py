@@ -1,18 +1,7 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
-import re
 from datetime import datetime
 
-
-def validate_password_strength(password: str) -> str:
-    if not re.search(r"\d", password):
-        raise ValueError("A password deve conter pelo menos um número.")
-    if not re.search(r"[A-Z]", password):
-        raise ValueError("A password deve conter pelo menos uma letra maiúscula.")
-    if not re.search(r"[a-z]", password):
-        raise ValueError("A password deve conter pelo menos uma letra minúscula.")
-    if not re.search(r"\W", password):
-        raise ValueError("A password deve conter pelo menos um símbolo especial.")
-    return password
+from app.services.auth_service import validate_password_strength
 
 
 class UserCryptoMaterial(BaseModel):

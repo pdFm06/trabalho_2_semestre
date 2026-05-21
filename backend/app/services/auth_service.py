@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
+import re
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -106,3 +107,19 @@ def get_current_user(
         )
 
     return user
+
+
+# ---------------------------------------------------------------------------
+# Validação de força da password
+# ---------------------------------------------------------------------------
+
+def validate_password_strength(password: str) -> str:
+    if not re.search(r"\d", password):
+        raise ValueError("A password deve conter pelo menos um número.")
+    if not re.search(r"[A-Z]", password):
+        raise ValueError("A password deve conter pelo menos uma letra maiúscula.")
+    if not re.search(r"[a-z]", password):
+        raise ValueError("A password deve conter pelo menos uma letra minúscula.")
+    if not re.search(r"\W", password):
+        raise ValueError("A password deve conter pelo menos um símbolo especial.")
+    return password

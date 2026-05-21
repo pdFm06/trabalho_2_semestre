@@ -590,7 +590,8 @@ async function deleteFolder(folderId) {
     const folder = allFolders.find((item) => Number(item.id) === Number(folderId));
     const folderName = folder?.name || `pasta #${folderId}`;
 
-    if (!confirm(`Tem a certeza que quer eliminar a pasta "${folderName}"?\n\nSó é possível eliminar pastas vazias.`)) return;
+    const confirmed = await confirmDelete(`pasta "${folderName}"`, "Só é possível eliminar pastas vazias.");
+    if (!confirmed) return;
 
     try {
         await apiRequest(`/folders/${encodeURIComponent(folderId)}`, "DELETE", null, true);
@@ -890,20 +891,34 @@ async function toggleFavorite(fileId) {
  * Mostra o modal de confirmação de eliminação.
  * Devolve uma Promise que resolve com true (confirmar) ou false (cancelar).
  */
-function confirmDelete(filename) {
+function confirmDelete(filename, warningText = null) {
     return new Promise((resolve) => {
-        const modalEl  = document.getElementById("confirmDeleteModal");
-        const message  = document.getElementById("confirmDeleteMessage");
+        const modalEl    = document.getElementById("confirmDeleteModal");
+        const message    = document.getElementById("confirmDeleteMessage");
         const confirmBtn = document.getElementById("confirmDeleteBtn");
 
         if (!modalEl || !confirmBtn) {
-            // Fallback para o confirm nativo se o modal não existir
             resolve(window.confirm(`Tem a certeza que quer eliminar "${filename}"?`));
             return;
         }
 
         if (message) {
+            message.innerHTML = `Tem a certeza que quer eliminar <strong>${message.textContent = ""}</strong>`;
             message.textContent = `Tem a certeza que quer eliminar "${filename}"?`;
+
+            // Mostrar/esconder linha de aviso extra (ex: "Só é possível eliminar pastas vazias.")
+            let warningEl = modalEl.querySelector(".confirm-delete-warning");
+            if (warningText) {
+                if (!warningEl) {
+                    warningEl = document.createElement("p");
+                    warningEl.className = "confirm-delete-warning text-muted small mt-2 mb-0";
+                    message.insertAdjacentElement("afterend", warningEl);
+                }
+                warningEl.textContent = warningText;
+                warningEl.style.display = "";
+            } else if (warningEl) {
+                warningEl.style.display = "none";
+            }
         }
 
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
