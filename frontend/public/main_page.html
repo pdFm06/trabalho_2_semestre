@@ -15,6 +15,16 @@
     <link rel="stylesheet" href="./css/index.css">
 </head>
 <body>
+    <!-- Botão hamburger — só aparece em mobile -->
+    <button id="hamburgerBtn" aria-label="Abrir menu" onclick="window.toggleSidebar?.()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Overlay escuro quando sidebar está aberta em mobile -->
+    <div id="sidebarOverlay" onclick="window.toggleSidebar?.()"></div>
+
     <div id="sidebar-container"></div>
 
 <main>

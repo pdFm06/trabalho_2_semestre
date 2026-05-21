@@ -919,6 +919,41 @@ html[data-app-theme="dark"] .file-list-row:hover {
     .settings-page {
         max-width: 100%;
     }
+
+    /* Settings — cabeçalho */
+    .settings-header h2 {
+        font-size: 1.4rem;
+    }
+
+    /* Settings — cards com padding reduzido */
+    .settings-card .card-body {
+        padding: 1rem !important;
+    }
+
+    /* Tema — botões ficam em linha abaixo do texto */
+    .theme-toggle-group {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    /* MFA — colunas col-lg-4 ficam todas a 100% */
+    .settings-card .col-lg-4,
+    .settings-card .col-lg-8 {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Recovery key textarea — altura menor em mobile */
+    #mfaRecoveryKeyInput {
+        min-height: 70px;
+    }
+
+    /* Separador hr — menos margem */
+    .settings-card hr.my-4 {
+        margin-top: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
 }
 
 @media (min-width: 768px) {
