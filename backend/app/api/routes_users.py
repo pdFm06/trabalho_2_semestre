@@ -51,7 +51,6 @@ def _email_delivery_error() -> HTTPException:
 
 
 def _maybe_return_code(code: str | None) -> str | None:
-    # Em produção deve estar sempre desativado. Os códigos são enviados por email real.
     return code if settings.EMAIL_RETURN_CODES else None
 
 
@@ -104,7 +103,6 @@ def _validate_mfa_code(user: User, challenge_id: str | None, code: str | None, p
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Código MFA inválido ou expirado.",
         )
-
 
 
 @router.post(
@@ -225,7 +223,6 @@ def request_mfa_toggle(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MfaToggleRequestResponse:
-    """Gera e envia por email um código para ativar/desativar MFA."""
     challenge_id, code = _create_mfa_challenge(db, current_user, purpose="toggle")
 
     try:
@@ -282,11 +279,9 @@ def request_password_reset(
     reset_request: PasswordResetRequest,
     db: Session = Depends(get_db),
 ) -> PasswordResetRequestResponse:
-    """Cria um código temporário de redefinição e envia-o por email."""
     email = str(reset_request.email).lower()
     user = crud.get_user_by_email(db, email)
 
-    # Mensagem genérica para reduzir enumeração de contas.
     message = "Se o email existir, foi gerado um código de redefinição."
 
     if user is None:

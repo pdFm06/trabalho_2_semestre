@@ -109,10 +109,6 @@ def get_current_user(
     return user
 
 
-# ---------------------------------------------------------------------------
-# Validação de força da password
-# ---------------------------------------------------------------------------
-
 def validate_password_strength(password: str) -> str:
     if not re.search(r"\d", password):
         raise ValueError("A password deve conter pelo menos um número.")

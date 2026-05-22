@@ -4,7 +4,6 @@
     font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Sidebar */
 
 .sidebar{
     position:fixed;
@@ -15,10 +14,10 @@
     background:#25303b;
     padding-top:20px;
     box-shadow: 4px 0 10px rgba(0,0,0,0.5);
-    /*4px deslocamento horizontal (horizontal offset) */
-    /*0 deslocamento vertical (vertical offset) */
-    /*10px blur radius → quão suave/desfocada fica a sombra */
-    /*rgba(0,0,0,0.2); cor da sombra + transparência */
+    
+    
+    
+    
 }
 
 .storage{
@@ -34,7 +33,6 @@
     margin-right:auto;
 }
 
-/* Logo */
 
 .logo{
     color:rgb(255, 255, 255);
@@ -42,7 +40,7 @@
     margin-bottom:30px;
 }
 
-/* Menu */
+
 .menu{
     list-style:none;
     padding-left: 0;
@@ -63,14 +61,12 @@
     transition:0.3s;
 }
 
-/* Hover */
 
 .menu a:hover{
     background:#34495e;
     padding-left:30px;
 }
 
-/* Conteúdo principal */
 
 .imagem_side_bar{
     width:20px;
@@ -89,9 +85,6 @@
     border-color: rgb(120, 139, 230);
 }
 
-
-
-/* Main Page */
 
 main {
     margin-left: 300px;
@@ -132,7 +125,7 @@ main {
     box-sizing: border-box;
 }
 
-/* Caixa de ficheiro em formato de card */
+
 .container_main .caixa{ 
     width: 100%;
     height: 100%;
@@ -145,7 +138,7 @@ main {
     align-items: center;
 }
 
-/* Área do nome do ficheiro dentro da caixa */
+
 .caixa .nome_ficheiro{
     display: flex;
     justify-content: flex-start;
@@ -162,17 +155,13 @@ main {
 }
 
 
-/* -------------------- FILES.HTML -------------------- */
-/* para deixar tudo na horizontal, ficheiro files.html */
-
-/* Ícone do ficheiro */
 .file-name img {
     width: 40px;
     height: 70px;
     object-fit: contain;
 }
 
-/* Cada linha de ficheiro */
+
 .file-row{
     display: flex;
     align-items: center;
@@ -181,7 +170,7 @@ main {
     border-bottom: 1px solid #ccc;
 }
 
-/* Bloco que junta ícone + nome do ficheiro */
+
 .file-name{
     display: flex;
     align-items: center;
@@ -189,37 +178,37 @@ main {
     min-width: 350px;
 }
 
-/* Ajuste do tamanho da imagem do ficheiro */
+
 .file-name img{
     width: 40px;
     height: 40px;
     object-fit: contain;
 }
 
-/* Data do ficheiro */
+
 .file-date{
     min-width: 220px;
 }
 
-/* Localização do ficheiro */
+
 .file-location{
     min-width: 150px;
 }
 
-/* Botão dos 3 pontinhos */
+
 .file-menu{
     font-size: 22px;
     cursor: pointer;
 }
 
-/* Barra superior com título à esquerda e botões à direita */
+
 .top-bar{
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-/* Link/botão View more */
+
 .view-more a{
     display: inline-block;
     padding: 10px 18px;
@@ -232,7 +221,7 @@ main {
     transition: 0.2s;
 }
 
-/* Hover do botão View more */
+
 .view-more a:hover{
     background-color: #f5f7fb;
     border: 1px solid #d6d6d6;
@@ -240,14 +229,12 @@ main {
 }
 
 
-/* -------------------- MENU DROPDOWN DOS 3 PONTINHOS -------------------- */
-/* Container do botão dos 3 pontinhos */
 .file-menu-container{
     position: relative;
     display: inline-block;
 }
 
-/* Menu escondido por padrão */
+
 .menu-dropdown{
     display: none;
     position: absolute;
@@ -262,14 +249,14 @@ main {
     z-index: 100;
 }
 
-/* Quando o JS adiciona a classe show, o menu aparece */
+
 .menu-dropdown.show{
     display: block;
 }
 
 .menu-item{
     padding: 10px 14px;
-    padding-left: 18px; /* espaço antes do texto */
+    padding-left: 18px; 
     font-size: 14px;
     cursor: pointer;
 }
@@ -278,9 +265,7 @@ main {
     background-color: #f5f7fb;
 }
 
-/* -------------------- MODAL DE UPLOAD -------------------- */
 
-/* Área de Drag and Drop */
 #dropZone {
     min-height: 250px;
     display: flex;
@@ -312,7 +297,7 @@ main {
     margin: 0;
 }
 
-/* Lista de ficheiros */
+
 #fileItems {
     max-height: 300px;
     overflow-y: auto;
@@ -336,7 +321,7 @@ main {
     font-size: 0.85rem;
 }
 
-/* Botão de envio */
+
 #uploadBtn {
     min-width: 120px;
 }
@@ -346,12 +331,12 @@ main {
     cursor: not-allowed;
 }
 
-/* Ocultando o input de ficheiro */
+
 #fileInput {
     display: none;
 }
 
-/* Modal header e footer */
+
 .modal-header {
     border-bottom: 1px solid #e2e2e2;
 }
@@ -359,7 +344,7 @@ main {
 .modal-footer {
     border-top: 1px solid #e2e2e2;
 }
-/* ─── Vista em lista ──────────────────────────────────────────────────── */
+
 .files-list-view {
     width: 100%;
 }
@@ -395,7 +380,7 @@ main {
     display: flex;
     align-items: center;
     gap: 10px;
-    min-width: 0; /* permite text-truncate funcionar */
+    min-width: 0; 
 }
 
 .fli-name img {
@@ -408,8 +393,8 @@ main {
 .fli-actions {
     justify-content: flex-end;
 }
-/* ──────────────────────────────────────────────────────────────────────── */
-/* -------------------- DRIVE NA SIDEBAR -------------------- */
+
+
 .drive-sidebar-actions {
     margin-top: -4px;
 }
@@ -476,7 +461,7 @@ main {
     font-size: 0.9rem;
 }
 
-/* ─── Temas e definições ─────────────────────────────────────────────── */
+
 :root {
     --app-bg: #f7f8fb;
     --app-surface: #ffffff;
@@ -683,7 +668,7 @@ html[data-app-theme="dark"] .file-list-row:hover {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Ajustes finais da sidebar: só uma opção ativa e sem árvore de pastas */
+
 .sidebar .menu a.sidebar-main-link {
     color: var(--sidebar-text) !important;
     border-left: 4px solid transparent;
@@ -708,7 +693,7 @@ html[data-app-theme="dark"] .file-list-row:hover {
     background: transparent;
 }
 
-/* Pastas na área principal da Drive */
+
 .folder-card {
     text-transform: none !important;
     letter-spacing: normal !important;
@@ -756,7 +741,7 @@ html[data-app-theme="dark"] .file-list-row:hover {
     text-decoration: underline;
 }
 
-/* ─── Ajustes finais da sidebar e separação Início/Drive ─────────────── */
+
 .imagem_side_bar {
     filter: brightness(0) invert(1);
     opacity: 0.95;
@@ -803,7 +788,6 @@ html[data-app-theme="dark"] .file-list-row:hover {
 }
 
 
-/* ─── MFA / Definições ─────────────────────────────────────────────── */
 #mfaSettingsAlert .alert {
     margin-bottom: 1rem;
 }
@@ -817,9 +801,7 @@ html[data-app-theme="dark"] .file-list-row:hover {
     resize: vertical;
 }
 
-/* ─── Responsivo — Mobile ────────────────────────────────────────────────── */
 
-/* Botão hamburger — só visível em mobile */
 #hamburgerBtn {
     display: none;
     position: fixed;
@@ -844,7 +826,7 @@ html[data-app-theme="dark"] .file-list-row:hover {
     transition: 0.3s;
 }
 
-/* Overlay escuro atrás da sidebar em mobile */
+
 #sidebarOverlay {
     display: none;
     position: fixed;
@@ -859,31 +841,31 @@ html[data-app-theme="dark"] .file-list-row:hover {
 
 @media (max-width: 767.98px) {
 
-    /* Sidebar escondida por defeito em mobile */
+    
     .sidebar {
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         z-index: 1050;
     }
 
-    /* Sidebar aberta quando tem a classe .sidebar-open */
+    
     .sidebar.sidebar-open {
         transform: translateX(0);
     }
 
-    /* Conteúdo principal ocupa o ecrã todo */
+    
     main {
         margin-left: 0 !important;
         padding: 16px !important;
-        padding-top: 60px !important; /* espaço para o hamburger */
+        padding-top: 60px !important; 
     }
 
-    /* Botão hamburger visível */
+    
     #hamburgerBtn {
         display: flex;
     }
 
-    /* Barra de pesquisa e botão Adicionar em coluna */
+    
     .container_search .row {
         flex-direction: column;
         gap: 10px;
@@ -898,7 +880,7 @@ html[data-app-theme="dark"] .file-list-row:hover {
         text-align: center;
     }
 
-    /* Cards de ficheiros — 1 por linha em mobile */
+    
     .col-sm-6,
     .col-md-4,
     .col-lg-3 {
@@ -907,7 +889,7 @@ html[data-app-theme="dark"] .file-list-row:hover {
         flex: 0 0 100% !important;
     }
 
-    /* Tabela em lista — esconder colunas menos importantes */
+    
     .table th:nth-child(2),
     .table td:nth-child(2),
     .table th:nth-child(3),
@@ -915,28 +897,28 @@ html[data-app-theme="dark"] .file-list-row:hover {
         display: none;
     }
 
-    /* Página de definições */
+    
     .settings-page {
         max-width: 100%;
     }
 
-    /* Settings — cabeçalho */
+    
     .settings-header h2 {
         font-size: 1.4rem;
     }
 
-    /* Settings — cards com padding reduzido */
+    
     .settings-card .card-body {
         padding: 1rem !important;
     }
 
-    /* Tema — botões ficam em linha abaixo do texto */
+    
     .theme-toggle-group {
         justify-content: flex-start;
         flex-wrap: wrap;
     }
 
-    /* MFA — colunas col-lg-4 ficam todas a 100% */
+    
     .settings-card .col-lg-4,
     .settings-card .col-lg-8 {
         width: 100% !important;
@@ -944,12 +926,12 @@ html[data-app-theme="dark"] .file-list-row:hover {
         max-width: 100% !important;
     }
 
-    /* Recovery key textarea — altura menor em mobile */
+    
     #mfaRecoveryKeyInput {
         min-height: 70px;
     }
 
-    /* Separador hr — menos margem */
+    
     .settings-card hr.my-4 {
         margin-top: 1rem !important;
         margin-bottom: 1rem !important;
@@ -957,7 +939,7 @@ html[data-app-theme="dark"] .file-list-row:hover {
 }
 
 @media (min-width: 768px) {
-    /* Em desktop a sidebar está sempre visível */
+    
     .sidebar {
         transform: translateX(0) !important;
     }
@@ -966,4 +948,3 @@ html[data-app-theme="dark"] .file-list-row:hover {
         display: none !important;
     }
 }
-/* ──────────────────────────────────────────────────────────────────────────── */

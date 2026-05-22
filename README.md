@@ -1,20 +1,16 @@
-# Inicialização do projeto com Docker
 
-## 1. Pré-requisitos
 
 Antes de iniciar o projeto, garante que tens instalado:
 
 - Docker
 - Docker Compose
 
-## 2. Extrair o projeto
 
 ```bash
 unzip cloud_segura.zip
 cd cloud_segura
 ```
 
-## 3. Configurar variáveis de ambiente
 
 Cria o ficheiro `.env` na raiz do projeto, com base no `example.env`:
 
@@ -24,7 +20,6 @@ cp example.env .env
 
 Depois, edita o ficheiro `.env` e confirma que as variáveis da base de dados, keyserver, MinIO, JWT e SMTP estão preenchidas.
 
-## 4. Construir e iniciar os containers
 
 Na raiz do projeto, executa:
 
@@ -38,7 +33,6 @@ Para correr em segundo plano:
 docker compose up --build -d
 ```
 
-## 5. Aceder à aplicação
 
 Depois dos containers arrancarem, abre no browser:
 
@@ -58,7 +52,6 @@ O keyserver fica disponível em:
 http://localhost:9002
 ```
 
-## 6. Parar o projeto
 
 Para parar os containers:
 
@@ -66,7 +59,6 @@ Para parar os containers:
 docker compose down
 ```
 
-## 7. Reiniciar tudo do zero
 
 Se alteraste passwords no `.env`, modelos da base de dados ou queres limpar todos os dados, usa:
 
@@ -77,7 +69,6 @@ docker compose up --build
 
 Atenção: o comando `-v` apaga os volumes Docker, incluindo bases de dados e dados guardados no MinIO.
 
-## 8. Aceder às bases de dados pelo pgAdmin
 
 Caso seja necessário aceder às bases de dados através do pgAdmin, descomenta temporariamente as portas do serviço `pgadmin` no ficheiro `compose.yaml`.
 
@@ -97,7 +88,6 @@ Depois, preenche os restantes campos com as credenciais definidas no ficheiro `.
 
 Após a ligação, as tabelas da aplicação deverão estar disponíveis.
 
-## 9. Ver logs
 
 Para ver todos os logs:
 
@@ -120,7 +110,6 @@ docker compose logs -f db
 docker compose logs -f keydb
 ```
 
-## 10. Comandos úteis
 
 Ver containers ativos:
 

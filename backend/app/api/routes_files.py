@@ -26,13 +26,6 @@ async def upload_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Recebe um ficheiro já cifrado pelo frontend.
-
-    Nesta fase ainda não guardamos as partes no MinIO. O objetivo é fechar o fluxo:
-    frontend cifra ficheiro -> backend guarda metadados do ficheiro cifrado ->
-    frontend guarda a chave AES cifrada no keyserver.
-    """
     data = await file.read()
 
     if not data:
@@ -47,7 +40,6 @@ async def upload_file(
             detail="Tamanho original inválido.",
         )
 
-    # Verificar se o utilizador tem espaço suficiente antes de aceitar o ficheiro.
     if (current_user.storage_used or 0) + len(data) > (current_user.storage_quota or 1_073_741_824):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -245,7 +237,6 @@ def toggle_favorite(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Alterna o estado de favorito de um ficheiro."""
     db_file = crud.toggle_favorite(db, file_id=file_id, owner_id=current_user.id)
     if not db_file:
         raise HTTPException(
@@ -256,12 +247,6 @@ def toggle_favorite(
 
 
 def _delete_file_key_from_keyserver(file_id: int, authorization_header: str | None) -> bool:
-    """Apaga a chave cifrada do ficheiro no keyserver.
-
-    Esta chamada é best-effort: se o keyserver estiver indisponível, o backend não
-    deixa de apagar o registo do ficheiro. O frontend recebe a indicação para ser
-    claro que pode ter ficado uma chave órfã no keyserver.
-    """
     if not authorization_header:
         return False
 
@@ -276,7 +261,6 @@ def _delete_file_key_from_keyserver(file_id: int, authorization_header: str | No
         with request.urlopen(req, timeout=3) as response:
             return 200 <= response.status < 300
     except error.HTTPError as exc:
-        # 404 significa que a chave já não existe; para o delete isto é aceitável.
         return exc.code == status.HTTP_404_NOT_FOUND
     except Exception:
         return False
@@ -289,8 +273,6 @@ def delete_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # 1. Verificar se o ficheiro existe ANTES de apagar,
-    #    para guardar os metadados (partes do MinIO e nome).
     db_file = crud.get_file_by_id_and_owner(db, file_id=file_id, owner_id=current_user.id)
 
     if not db_file:
@@ -299,16 +281,11 @@ def delete_file(
             detail="Ficheiro não encontrado.",
         )
 
-    # Guardar as partes e o nome antes de os perder após o commit.
     parts_to_delete = list(db_file.parts or [])
     filename = db_file.filename
 
-    # 2. Apagar o registo da base de dados.
     crud.delete_file(db, file_id=file_id, owner_id=current_user.id)
 
-    # 3. Apagar as partes do MinIO (best-effort).
-    #    Se o MinIO falhar, o ficheiro já foi removido da BD e do keyserver —
-    #    registamos os erros na resposta para o frontend poder informar o utilizador.
     minio_errors = []
     for part in parts_to_delete:
         bucket = part.get("bucket")
@@ -324,7 +301,6 @@ def delete_file(
             except Exception as exc:
                 minio_errors.append(f"{bucket}/{object_name}: {exc}")
 
-    # 4. Apagar a chave cifrada no keyserver (best-effort).
     key_deleted = _delete_file_key_from_keyserver(file_id, authorization)
 
     return {

@@ -7,8 +7,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    #ports:
-      #- "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -88,8 +86,6 @@ services:
       POSTGRES_PASSWORD: ${KEYDB_PASSWORD}
     volumes:
       - keydb_data:/var/lib/postgresql/data
-    #ports:
-      #- "5434:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${KEYDB_USER} -d ${KEYDB_DB}"]
       interval: 5s
@@ -114,9 +110,6 @@ services:
     environment:
       MINIO_ROOT_USER:     ${MINIO_1_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_1_SECRET_KEY}
-    #ports:
-      #- "9000:9000"
-      #- "9001:9001"
     volumes:
       - minio1_data:/data
 
@@ -126,9 +119,6 @@ services:
     environment:
       MINIO_ROOT_USER:     ${MINIO_2_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_2_SECRET_KEY}
-    #ports:
-      #- "9010:9000"
-      #- "9011:9001"
     volumes:
       - minio2_data:/data
 
@@ -138,9 +128,6 @@ services:
     environment:
       MINIO_ROOT_USER:     ${MINIO_3_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_3_SECRET_KEY}
-    #ports:
-      #- "9020:9000"
-      #- "9021:9001"
     volumes:
       - minio3_data:/data
 

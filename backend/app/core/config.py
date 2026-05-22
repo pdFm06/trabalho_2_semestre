@@ -11,10 +11,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # ----------------------------
-    # JWT / Autenticação
-    # ----------------------------
-    # Em desenvolvimento há um valor por defeito. Em produção, definir sempre via variável de ambiente.
     JWT_SECRET_KEY: str = os.getenv(
         "JWT_SECRET_KEY",
         "dev-only-change-this-secret-key-before-production",
@@ -23,13 +19,6 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 
 
-
-
-    # ----------------------------
-    # Email / SMTP
-    # ----------------------------
-    # Configuração SMTP real.
-    # Estes valores devem vir do ficheiro .env ou das variáveis de ambiente do Docker.
     SMTP_HOST: str = os.getenv("SMTP_HOST", "")
     SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
     SMTP_USERNAME: str = os.getenv("SMTP_USERNAME", "")
@@ -40,29 +29,17 @@ class Settings(BaseSettings):
     SMTP_USE_STARTTLS: bool = os.getenv("SMTP_USE_STARTTLS", "true").lower() == "true"
     SMTP_TIMEOUT_SECONDS: int = int(os.getenv("SMTP_TIMEOUT_SECONDS", "15"))
 
-    # Quando true, impede que códigos sejam enviados para Mailpit/localhost por engano.
     SMTP_REQUIRE_REAL_DELIVERY: bool = os.getenv("SMTP_REQUIRE_REAL_DELIVERY", "true").lower() == "true"
 
-    # Em produção deve ficar sempre false. Se true, a API devolve códigos nas respostas.
     EMAIL_RETURN_CODES: bool = os.getenv("EMAIL_RETURN_CODES", "false").lower() == "true"
 
-    # ----------------------------
-    # Keyserver
-    # ----------------------------
-    # URL interna usada pelo backend dentro da rede Docker.
     KEYSERVER_INTERNAL_URL: str = os.getenv("KEYSERVER_INTERNAL_URL", "http://keyserver:9000")
 
-    # ----------------------------
-    # MinIO (armazenamento de objetos)
-    # ----------------------------
-    # Compatibilidade com a configuração antiga de um único MinIO.
     MINIO_ENDPOINT: str = os.getenv("MINIO_ENDPOINT", "localhost:9000")
     MINIO_ACCESS_KEY: str = os.getenv("MINIO_ACCESS_KEY", "minio")
     MINIO_SECRET_KEY: str = os.getenv("MINIO_SECRET_KEY", "minio123")
     MINIO_SECURE: bool = os.getenv("MINIO_SECURE", "false").lower() == "true"
 
-    # Nova arquitetura: três instâncias MinIO independentes, cada uma com um bucket.
-    # O backend guarda uma parte do ficheiro cifrado em cada instância.
     MINIO_1_ENDPOINT: str = os.getenv("MINIO_1_ENDPOINT", os.getenv("MINIO_ENDPOINT", "localhost:9000"))
     MINIO_1_ACCESS_KEY: str = os.getenv("MINIO_1_ACCESS_KEY", os.getenv("MINIO_ACCESS_KEY", "minio"))
     MINIO_1_SECRET_KEY: str = os.getenv("MINIO_1_SECRET_KEY", os.getenv("MINIO_SECRET_KEY", "minio123"))
@@ -106,12 +83,8 @@ class Settings(BaseSettings):
 
     @property
     def MINIO_BUCKETS(self) -> list[str]:
-        # Mantém compatibilidade com código que ainda consulta settings.MINIO_BUCKETS.
         return [node["bucket"] for node in self.MINIO_NODES]
 
-    # ----------------------------
-    # Divisão de ficheiros
-    # ----------------------------
     FILE_PARTS: int = 3
 
 

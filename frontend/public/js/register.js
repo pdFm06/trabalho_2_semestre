@@ -19,7 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
         "key_algorithm"
     ];
 
-    // ── Validação da password no frontend ──────────────────────────────────
     function validatePassword(password) {
         const errors = [];
         if (password.length < 12)          errors.push("A password deve ter pelo menos 12 caracteres.");
@@ -30,7 +29,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return errors;
     }
 
-    // ── Traduz erros Pydantic do backend para português ────────────────────
     function parseFriendlyRegisterError(message) {
         try {
             const parsed = JSON.parse(message);
@@ -44,7 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (field === "email")    return "O email introduzido não é válido.";
                 if (field === "password") {
                     if (type === "string_too_short") return "A password deve ter pelo menos 12 caracteres.";
-                    // Erros do validador de força (value_error com mensagem específica)
                     if (msg.includes("número") || msg.includes("número"))    return "A password deve conter pelo menos um número.";
                     if (msg.includes("maiúscula"))                            return "A password deve conter pelo menos uma letra maiúscula.";
                     if (msg.includes("minúscula"))                            return "A password deve conter pelo menos uma letra minúscula.";
@@ -59,7 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             return friendly.join("\n");
         } catch (_) {
-            // Mensagens simples do backend (não JSON)
             if (message.includes("already") || message.includes("registado")) {
                 return "Este email já está registado. Tenta fazer login.";
             }
@@ -75,7 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const password        = document.getElementById("password").value;
         const confirmPassword = document.getElementById("confirmPassword").value;
 
-        // Validações no frontend antes de qualquer pedido ao servidor
         if (!email.includes("@")) {
             showBootstrapAlert("Introduz um email válido.", "warning");
             return;

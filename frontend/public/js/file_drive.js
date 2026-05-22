@@ -29,7 +29,6 @@ let showOnlyFavorites = false;
 let currentTypeFilter = null; // null = todos; "pdf" | "video" | "image" | "zip" | "document" | "other"
 let currentSection = "home";
 
-// ─── Utilitários ────────────────────────────────────────────────────────────
 
 function driveEscapeHTML(value) {
     return String(value ?? "")
@@ -72,10 +71,7 @@ function getFileIcon(filename) {
     return "./img/main_page/download.png";
 }
 
-/**
- * Categoriza um ficheiro pelo seu tipo para o filtro "Tipo".
- * Devolve: "pdf" | "video" | "image" | "zip" | "document" | "other"
- */
+
 function getFileTypeCategory(filename) {
     const lower = String(filename || "").toLowerCase();
     if (lower.endsWith(".pdf")) return "pdf";
@@ -87,7 +83,6 @@ function getFileTypeCategory(filename) {
 }
 
 function getCurrentFolderId() {
-    // Uploads feitos a partir do Início vão para a raiz.
     return currentSection === "drive" ? currentFolderId : null;
 }
 
@@ -102,17 +97,12 @@ function normalizeFolderId(folderId) {
     return Number(folderId);
 }
 
-// ─── UI comum ────────────────────────────────────────────────────────────────
 
 function setMainControlsForSection() {
     const isDrive = currentSection === "drive";
 
-    // A criação de pastas só existe na Drive.
     if (createFolderBtn) createFolderBtn.classList.toggle("d-none", !isDrive);
 
-    // O upload existe no Início e na Drive.
-    // No Início, o upload vai para a raiz.
-    // Na Drive, o upload vai para a pasta atualmente aberta.
     if (addFileBtn) addFileBtn.classList.remove("d-none");
 
     if (fileSearchInput) {
@@ -177,7 +167,6 @@ async function refreshStorageBar() {
     }
 }
 
-// ─── Pastas ─────────────────────────────────────────────────────────────────
 
 async function loadAllFolders() {
     allFolders = await apiRequest("/folders", "GET", null, true) || [];
@@ -287,12 +276,10 @@ function renderDriveContents(folders = currentFolders, files = currentFiles) {
     filesGrid.innerHTML = `${foldersHtml}${filesHtml}`;
 }
 
-// Alias mantido para compatibilidade com código antigo.
 function renderDriveFolders(folders = currentFolders) {
     renderDriveContents(folders, currentFiles);
 }
 
-// ─── Ficheiros ──────────────────────────────────────────────────────────────
 
 function renderFileCards(files = currentFiles) {
     return files.map((file) => {
@@ -405,13 +392,10 @@ function renderHomeFiles(files = currentFiles) {
     filesGrid.innerHTML = renderFileCards(files);
 }
 
-// ─── Filtros ────────────────────────────────────────────────────────────────
 
 function filterCurrentView() {
     const query = String(fileSearchInput?.value || "").trim().toLowerCase();
 
-    // Se a pesquisa começa com "." trata-a como filtro de extensão.
-    // Ex: ".pdf" mostra só PDFs; ".mp4" mostra só vídeos; ".zip" só ZIPs.
     const isExtSearch = query.startsWith(".");
 
     if (currentSection === "drive") {
@@ -462,7 +446,6 @@ function filterCurrentView() {
     renderHomeFiles(filteredFiles);
 }
 
-// ─── Carregamento de dados ──────────────────────────────────────────────────
 
 async function loadHomeFiles() {
     if (!filesGrid) return;
@@ -533,7 +516,6 @@ async function loadDriveFolders(folderId = currentFolderId) {
 }
 
 async function loadUserFiles(folderId = null) {
-    // Mantém compatibilidade com file_upload.js e chamadas antigas.
     if (currentSection === "drive") {
         return loadDriveFolders(folderId ?? currentFolderId);
     }
@@ -544,7 +526,6 @@ async function openFolder(folderId) {
     await loadDriveFolders(normalizeFolderId(folderId));
 }
 
-// ─── Criar pasta ────────────────────────────────────────────────────────────
 
 function resetFolderModal() {
     if (folderNameInput) folderNameInput.value = "";
@@ -604,7 +585,6 @@ async function deleteFolder(folderId) {
     }
 }
 
-// ─── Mover ficheiros ────────────────────────────────────────────────────────
 
 function getFolderPathLabel(folder) {
     const parts = [folder.name];
@@ -686,7 +666,6 @@ async function submitMoveFile(event) {
     }
 }
 
-// ─── Modal de password para download ────────────────────────────────────────
 
 function ensurePasswordModal() {
     let modalElement = document.getElementById("privateKeyPasswordModal");
@@ -789,7 +768,6 @@ async function ensurePrivateKeyLoadedForDownload() {
     await askPasswordForPrivateKey();
 }
 
-// ─── Download ───────────────────────────────────────────────────────────────
 
 async function fetchEncryptedFile(fileId) {
     const token = getAccessToken();
@@ -869,7 +847,6 @@ async function downloadAndDecryptFile(fileId) {
     }
 }
 
-// ─── Favorito ───────────────────────────────────────────────────────────────
 
 async function toggleFavorite(fileId) {
     try {
@@ -885,12 +862,7 @@ async function toggleFavorite(fileId) {
     }
 }
 
-// ─── Delete ─────────────────────────────────────────────────────────────────
 
-/**
- * Mostra o modal de confirmação de eliminação.
- * Devolve uma Promise que resolve com true (confirmar) ou false (cancelar).
- */
 function confirmDelete(filename, warningText = null) {
     return new Promise((resolve) => {
         const modalEl    = document.getElementById("confirmDeleteModal");
@@ -906,7 +878,6 @@ function confirmDelete(filename, warningText = null) {
             message.innerHTML = `Tem a certeza que quer eliminar <strong>${message.textContent = ""}</strong>`;
             message.textContent = `Tem a certeza que quer eliminar "${filename}"?`;
 
-            // Mostrar/esconder linha de aviso extra (ex: "Só é possível eliminar pastas vazias.")
             let warningEl = modalEl.querySelector(".confirm-delete-warning");
             if (warningText) {
                 if (!warningEl) {
@@ -970,7 +941,6 @@ async function deleteFile(fileId) {
     }
 }
 
-// ─── Drag & Drop — mover ficheiros para pastas ──────────────────────────────
 
 filesGrid?.addEventListener("dragstart", (event) => {
     const card = event.target.closest("[data-drag-file-id]");
@@ -997,7 +967,6 @@ filesGrid?.addEventListener("dragover", (event) => {
 filesGrid?.addEventListener("dragleave", (event) => {
     const folderCard = event.target.closest("[data-drop-folder-id]");
     if (!folderCard) return;
-    // Só limpar se sair mesmo da pasta (não de um filho)
     if (!folderCard.contains(event.relatedTarget)) {
         folderCard.style.outline = "";
         folderCard.style.background = "";
@@ -1037,7 +1006,6 @@ filesGrid?.addEventListener("drop", async (event) => {
     }
 });
 
-// ─── Drag & Drop no breadcrumb — mover ficheiros para pastas acima ──────────
 
 folderBreadcrumb?.addEventListener("dragover", (event) => {
     const link = event.target.closest("[data-folder-open]");
@@ -1082,7 +1050,6 @@ folderBreadcrumb?.addEventListener("drop", async (event) => {
     }
 });
 
-// ─── Event listeners ────────────────────────────────────────────────────────
 
 filesGrid?.addEventListener("click", (event) => {
     const openFolderBtn = event.target.closest("[data-open-folder-id]");
@@ -1121,7 +1088,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadHomeFiles();
 });
 
-// ─── Exports globais ────────────────────────────────────────────────────────
 
 window.loadUserFiles = loadUserFiles;
 window.loadHomeFiles = loadHomeFiles;
@@ -1153,10 +1119,8 @@ window.setFavoriteFilter = function (onlyFavorites) {
 };
 
 window.setTypeFilter = function (type) {
-    // type: null | "pdf" | "image" | "video" | "zip" | "document"
     currentTypeFilter = type || null;
 
-    // Actualizar o label do botão Tipo com o filtro activo.
     const labels = {
         null: "Tipo", pdf: "Tipo: PDF", image: "Tipo: Imagem",
         video: "Tipo: Vídeo", zip: "Tipo: ZIP", document: "Tipo: Documento"

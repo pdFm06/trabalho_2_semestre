@@ -5,15 +5,6 @@ from app.schema.user_schema import UserCreate
 from app.services.auth_service import hash_password
 
 
-# ---------------------------------------------------------------------------
-# CRUD = Create, Read, Update, Delete
-# ---------------------------------------------------------------------------
-# Este ficheiro centraliza todas as operações com a base de dados.
-# As rotas (routes_files.py) chamam estas funções em vez de fazer
-# queries diretamente — isto torna o código mais organizado e reutilizável.
-# ---------------------------------------------------------------------------
-
-
 def get_files_by_owner(db: Session, owner_id: int) -> list[File]:
     return db.query(File).filter(File.owner_id == owner_id).order_by(File.created_at.desc()).all()
 
@@ -97,7 +88,6 @@ def get_file_by_id_and_owner(db: Session, file_id: int, owner_id: int) -> File |
     return db.query(File).filter(File.id == file_id, File.owner_id == owner_id).first()
 
 def move_file_to_folder(db: Session, file_id: int, owner_id: int, folder_id: int | None) -> File | None:
-    """Move um ficheiro para outra pasta. folder_id=None representa a raiz."""
     db_file = get_file_by_id_and_owner(db, file_id, owner_id)
     if not db_file:
         return None
@@ -112,10 +102,6 @@ def move_file_to_folder(db: Session, file_id: int, owner_id: int, folder_id: int
 
 
 def toggle_favorite(db: Session, file_id: int, owner_id: int) -> File | None:
-    """
-    Alterna o estado de favorito de um ficheiro.
-    Devolve o ficheiro atualizado, ou None se não existir.
-    """
     db_file = get_file_by_id_and_owner(db, file_id, owner_id)
     if not db_file:
         return None
@@ -125,16 +111,10 @@ def toggle_favorite(db: Session, file_id: int, owner_id: int) -> File | None:
     return db_file
 
 def delete_file(db: Session, file_id: int, owner_id: int) -> File | None:
-    """
-    DELETE — Remove um ficheiro da base de dados pelo seu file_id.
-    Decrementa também o espaço utilizado pelo utilizador.
-    Devolve o objeto eliminado ou None se não existir.
-    """
     db_file = get_file_by_id_and_owner(db, file_id, owner_id)
     if not db_file:
         return None
 
-    # Decrementar storage_used antes de apagar o ficheiro.
     owner = get_user_by_id(db, owner_id)
     if owner:
         owner.storage_used = max(0, (owner.storage_used or 0) - (db_file.file_size or 0))
@@ -178,14 +158,6 @@ def create_user(db: Session, user_create: UserCreate):
     return db_user
 
 def set_password_reset_code(db: Session, user: User, code_hash: str, expires_at) -> User:
-    """
-    Guarda na BD o hash do código temporário de redefinição de password.
-
-    Nota:
-    - O código em claro nunca é guardado.
-    - Em desenvolvimento, o código pode ser devolvido pela API para facilitar testes,
-      mas na BD fica apenas o hash.
-    """
     user.password_reset_code_hash = code_hash
     user.password_reset_expires_at = expires_at
 
@@ -197,12 +169,6 @@ def set_password_reset_code(db: Session, user: User, code_hash: str, expires_at)
 
 
 def is_password_reset_code_expired(user: User) -> bool:
-    """
-    Verifica se o código de redefinição expirou.
-
-    Trata datas timezone-aware e timezone-naive para evitar erros de comparação,
-    dependendo de como o PostgreSQL/SQLAlchemy devolver o campo.
-    """
     from datetime import datetime, timezone
 
     expires_at = user.password_reset_expires_at
@@ -219,9 +185,6 @@ def is_password_reset_code_expired(user: User) -> bool:
 
 
 def clear_password_reset_code(db: Session, user: User) -> User:
-    """
-    Remove o código temporário de redefinição após uso.
-    """
     user.password_reset_code_hash = None
     user.password_reset_expires_at = None
 
@@ -233,16 +196,6 @@ def clear_password_reset_code(db: Session, user: User) -> User:
 
 
 def reset_user_password_and_keys(db: Session, user: User, reset_data) -> User:
-    """
-    Redefine a password e atualiza o material criptográfico do utilizador.
-
-    Fluxo esperado:
-    - O frontend valida o código.
-    - O frontend usa a recovery key para recuperar a chave privada antiga.
-    - O frontend cifra novamente a mesma chave privada com a nova password.
-    - O frontend gera uma nova recovery key e envia a nova cópia cifrada.
-    - O backend guarda apenas material cifrado, nunca a chave privada em claro.
-    """
     user.password_hash = hash_password(reset_data.new_password)
 
     user.kdf_salt = reset_data.kdf_salt
@@ -267,10 +220,6 @@ def reset_user_password_and_keys(db: Session, user: User, reset_data) -> User:
 
 
 def create_file(db: Session, file_data: File_Create) -> File:
-    """
-    Cria o registo de metadados do ficheiro na BD principal
-    e incrementa o espaço utilizado pelo utilizador.
-    """
     db_file = File(
         filename=file_data.filename,
         owner_id=file_data.owner_id,
@@ -285,7 +234,6 @@ def create_file(db: Session, file_data: File_Create) -> File:
 
     db.add(db_file)
 
-    # Incrementar storage_used do utilizador.
     owner = get_user_by_id(db, file_data.owner_id)
     if owner:
         owner.storage_used = (owner.storage_used or 0) + (file_data.file_size or 0)
@@ -296,21 +244,8 @@ def create_file(db: Session, file_data: File_Create) -> File:
 
     return db_file
 
-def update_file_parts(db: Session, file_id: int, owner_id: int, parts: list[dict[str, str]]) -> File | None:
-    db_file = get_file_by_id_and_owner(db, file_id, owner_id)
-    if not db_file:
-        return None
-    db_file.parts = parts
-    db.commit()
-    db.refresh(db_file)
-    return db_file
-
-# ---------------------------------------------------------------------------
-# MFA
-# ---------------------------------------------------------------------------
 
 def set_mfa_code(db: Session, user: User, code_hash: str, expires_at, challenge_id: str, purpose: str) -> User:
-    """Guarda um código MFA temporário. Apenas o hash fica na BD."""
     user.mfa_code_hash = code_hash
     user.mfa_code_expires_at = expires_at
     user.mfa_challenge_id = challenge_id

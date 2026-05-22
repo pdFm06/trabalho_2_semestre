@@ -4,18 +4,6 @@ from minio import Minio
 from minio.error import S3Error
 from app.core.config import settings
 
-# ---------------------------------------------------------------------------
-# Clientes MinIO
-# ---------------------------------------------------------------------------
-# Nova arquitetura:
-#   - minio1 guarda a parte 0
-#   - minio2 guarda a parte 1
-#   - minio3 guarda a parte 2
-# Cada instância MinIO tem apenas um bucket.
-#
-# O ficheiro já chega cifrado pelo frontend. O backend divide esses bytes
-# cifrados e distribui as partes pelos três nós.
-# ---------------------------------------------------------------------------
 
 _nodes = settings.MINIO_NODES
 
@@ -40,12 +28,6 @@ def _get_node_by_index(node_index: int) -> dict[str, str]:
 
 
 def _get_node_by_id(node_id: str | None, part_number: int | None = None) -> dict[str, str]:
-    """
-    Resolve o nó MinIO a usar.
-
-    Para compatibilidade com registos antigos, se node_id não existir nos metadados
-    da parte, tentamos usar part_number para inferir o nó.
-    """
     if node_id:
         node = _node_by_id.get(node_id)
         if node:
@@ -59,13 +41,6 @@ def _get_node_by_id(node_id: str | None, part_number: int | None = None) -> dict
 
 
 def _ensure_bucket(node: dict[str, str], attempts: int = 12, delay_seconds: float = 0.5) -> None:
-    """
-    Verifica se o bucket existe na instância MinIO indicada.
-    Se não existir, cria-o automaticamente.
-
-    O retry evita que o primeiro upload falhe quando o container MinIO já arrancou,
-    mas ainda não está totalmente pronto para receber pedidos S3.
-    """
     bucket = node["bucket"]
     client = _clients[node["node_id"]]
     last_error = None
@@ -99,9 +74,6 @@ def upload_part(
     data: bytes,
     original_filename: str,
 ) -> dict:
-    """
-    Faz upload de uma parte para a instância MinIO correspondente.
-    """
     node = _get_node_by_index(node_index)
     bucket = node["bucket"]
     client = _clients[node["node_id"]]
@@ -139,12 +111,6 @@ def delete_part(
     node_id: str | None = None,
     part_number: int | None = None,
 ) -> None:
-    """
-    Remove uma parte de ficheiro da instância MinIO correta.
-
-    Esta operação é best-effort: se o objeto já não existir, considera-se que
-    já foi eliminado.
-    """
     node = _get_node_by_id(node_id=node_id, part_number=part_number)
     client = _clients[node["node_id"]]
     bucket_name = bucket or node["bucket"]
@@ -166,9 +132,6 @@ def download_part(
     node_id: str | None = None,
     part_number: int | None = None,
 ) -> bytes:
-    """
-    Descarrega uma parte do MinIO e devolve os bytes.
-    """
     node = _get_node_by_id(node_id=node_id, part_number=part_number)
     client = _clients[node["node_id"]]
     bucket_name = bucket or node["bucket"]

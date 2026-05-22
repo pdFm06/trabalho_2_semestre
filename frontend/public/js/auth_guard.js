@@ -6,10 +6,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // Aguardar que a sidebar esteja injetada no DOM antes de procurar
-    // os elementos #currentUserEmail e #logoutButton.
-    // Se layout.js não estiver presente (página sem sidebar), a Promise
-    // é undefined e o await resolve imediatamente — sem quebrar nada.
     await window.sidebarLoaded;
 
     try {
@@ -20,13 +16,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             emailElement.textContent = user.email;
         }
 
-        // Guardar dados do utilizador globalmente para uso noutros scripts.
         window.currentUser = user;
 
-        // Atualizar barra de progresso do espaço usado na sidebar.
         updateStorageBar(user.storage_used ?? 0, user.storage_quota ?? 1_073_741_824);
 
-        // Atualizar estado visual das definições/MFA, caso a view já tenha sido carregada.
         window.refreshMfaSettings?.();
     } catch (error) {
         console.error(error);
@@ -43,10 +36,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 });
-/**
- * Atualiza a barra de progresso do espaço na sidebar.
- * Também é exportada para poder ser chamada após upload/delete.
- */
+
 function updateStorageBar(used, quota) {
     const bar  = document.getElementById("storageProgressBar");
     const text = document.getElementById("storageUsedText");
@@ -58,7 +48,6 @@ function updateStorageBar(used, quota) {
     if (bar) {
         bar.style.width = pct + "%";
         bar.setAttribute("aria-valuenow", pct);
-        // Mudar cor conforme ocupação: vermelho > 90 %, amarelo > 70 %
         bar.className = "progress-bar " + (
             pct > 90 ? "bg-danger" :
             pct > 70 ? "bg-warning" :

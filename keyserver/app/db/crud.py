@@ -15,7 +15,6 @@ def get_file_key(db: Session, file_id: int, owner_id: int) -> FileKey | None:
 
 
 def upsert_file_key(db: Session, payload: FileKeyCreate, owner_id: int) -> FileKey:
-    """Cria ou actualiza a chave cifrada de um ficheiro."""
     existing = get_file_key(db, payload.file_id, owner_id)
 
     if existing:

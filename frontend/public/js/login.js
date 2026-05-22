@@ -20,7 +20,6 @@ async function completeLogin(password, response) {
     }, 700);
 }
 
-// ── Utilitário: mostrar erro DENTRO do modal MFA ──────────────────────────────
 function showMfaError(message) {
     const alertEl = document.getElementById("mfaLoginAlert");
     if (alertEl) {
@@ -91,10 +90,8 @@ function showMfaModal(response) {
     if (codeInput)     codeInput.value = "";
     if (recoveryInput) recoveryInput.value = "";
 
-    // Resetar alerta para estado informativo
     resetMfaAlert();
 
-    // Em modo dev, mostrar o código directamente no alerta
     if (response.dev_mfa_code) {
         const alertEl = document.getElementById("mfaLoginAlert");
         if (alertEl) {

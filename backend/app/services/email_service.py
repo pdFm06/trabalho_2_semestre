@@ -9,7 +9,7 @@ from app.core.config import settings
 
 
 class EmailSendError(RuntimeError):
-    """Erro ao enviar email pelo serviço SMTP configurado."""
+    pass
 
 
 _LOCAL_SMTP_HOSTS = {"mailpit", "localhost", "127.0.0.1", "0.0.0.0"}
@@ -20,13 +20,6 @@ def _is_valid_email(value: str) -> bool:
 
 
 def _validate_email_settings() -> None:
-    """Valida a configuração SMTP antes de tentar enviar.
-
-    A aplicação foi configurada para entrega real de email. Por isso, quando
-    SMTP_REQUIRE_REAL_DELIVERY=True, recusamos hosts locais como Mailpit ou
-    localhost. Isto evita que os códigos MFA/reset fiquem presos num serviço de
-    desenvolvimento em vez de chegarem à caixa real do utilizador.
-    """
     missing = []
 
     if not settings.SMTP_HOST:
@@ -63,13 +56,6 @@ def _validate_email_settings() -> None:
 
 
 def _send_email(to_email: str, subject: str, text_body: str, html_body: str | None = None) -> None:
-    """Envia um email real através do SMTP configurado.
-
-    O destinatário é sempre o email do utilizador recebido pela função que chama
-    este serviço. Assim, os códigos de MFA e de redefinição de password são
-    submetidos ao fornecedor SMTP e seguem para a caixa de correio real do
-    utilizador.
-    """
     _validate_email_settings()
 
     if not _is_valid_email(to_email):

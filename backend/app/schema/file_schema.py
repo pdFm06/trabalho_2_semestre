@@ -33,23 +33,6 @@ class FileResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class FileListItem(BaseModel):
-    id: int
-    filename: str
-    folder_id: int | None = None
-    file_size: int
-    num_parts: int
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class FileDownloadInfo(BaseModel):
-    file_id: str
-    original_filename: str
-    file_size: int
-
-
 class FolderCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     parent_id: int | None = None

@@ -7,7 +7,6 @@ from app.api.routes import router
 
 
 def init_db_with_retry(max_attempts: int = 30, delay_seconds: int = 2):
-    """Aguarda o PostgreSQL estar disponível e cria as tabelas."""
     last_error = None
 
     for attempt in range(1, max_attempts + 1):

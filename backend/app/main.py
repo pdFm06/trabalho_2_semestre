@@ -18,8 +18,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Apenas aceitável em desenvolvimento.
-# Em produção, usa Alembic migrations.
 Base.metadata.create_all(bind=engine)
 
 app.include_router(routes_files.router)
