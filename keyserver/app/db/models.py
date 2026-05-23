@@ -4,6 +4,7 @@ from app.db.database import Base
 
 
 class FileKey(Base):
+    # Representa a chave AES cifrada de um ficheiro guardada no keyserver.
     __tablename__ = "file_keys"
     __table_args__ = (
         UniqueConstraint("file_id", "owner_id", name="uq_file_key_file_owner"),

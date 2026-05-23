@@ -1,18 +1,23 @@
+// Ficheiro responsável por frontend/public/js/api.js.
 const API_BASE_URL = "http://localhost:8000";
 window.KEYSERVER_BASE_URL = window.KEYSERVER_BASE_URL || "http://localhost:9002";
 
+// Obtém o token JWT guardado na sessão do browser.
 function getAccessToken() {
     return sessionStorage.getItem("access_token");
 }
 
+// Guarda o token JWT recebido após autenticação.
 function setAccessToken(token) {
     sessionStorage.setItem("access_token", token);
 }
 
+// Remove o token JWT da sessão atual.
 function clearAccessToken() {
     sessionStorage.removeItem("access_token");
 }
 
+// Executa pedidos HTTP ao backend, adicionando o token quando necessário.
 async function apiRequest(endpoint, method = "GET", body = null, useAuth = false) {
     const headers = {
         "Content-Type": "application/json"

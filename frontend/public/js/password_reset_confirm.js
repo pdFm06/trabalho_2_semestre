@@ -1,3 +1,4 @@
+// Ficheiro responsável por frontend/public/js/password_reset_confirm.js.
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("passwordResetConfirmForm");
     const email = sessionStorage.getItem("password_reset_email");

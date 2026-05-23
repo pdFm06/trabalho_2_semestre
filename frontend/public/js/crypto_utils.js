@@ -1,6 +1,8 @@
+// Ficheiro responsável por frontend/public/js/crypto_utils.js.
 const KDF_ITERATIONS = 600000;
 
 
+// Converte bytes para Base64URL para transporte seguro em JSON.
 function arrayBufferToBase64Url(buffer) {
     const bytes = new Uint8Array(buffer);
     let binary = "";
@@ -16,6 +18,7 @@ function arrayBufferToBase64Url(buffer) {
 }
 
 
+// Converte Base64URL de volta para bytes.
 function base64UrlToArrayBuffer(base64url) {
     let clean = String(base64url)
         .trim()
@@ -38,19 +41,23 @@ function base64UrlToArrayBuffer(base64url) {
 }
 
 
+// Mantém compatibilidade com chamadas antigas de conversão para Base64URL.
 function arrayBufferToBase64(buffer) {
     return arrayBufferToBase64Url(buffer);
 }
 
+// Mantém compatibilidade com chamadas antigas de conversão de Base64URL.
 function base64ToArrayBufferUrl(value) {
     return base64UrlToArrayBuffer(value);
 }
 
+// Mantém compatibilidade com chamadas antigas de conversão para bytes.
 function base64ToArrayBuffer(value) {
     return base64UrlToArrayBuffer(value);
 }
 
 
+// Remove espaços da recovery key introduzida pelo utilizador.
 function normalizeRecoveryKey(recoveryKey) {
     return String(recoveryKey)
         .trim()
@@ -58,16 +65,19 @@ function normalizeRecoveryKey(recoveryKey) {
 }
 
 
+// Formata a recovery key em blocos para facilitar leitura e cópia.
 function formatRecoveryKeyForDisplay(recoveryKey) {
     return String(recoveryKey).match(/.{1,4}/g).join(" ");
 }
 
 
+// Alias usado por código antigo para formatar a recovery key.
 function formatRecoveryKey(recoveryKey) {
     return formatRecoveryKeyForDisplay(recoveryKey);
 }
 
 
+// Calcula o hash da recovery key enviado ao backend para verificação MFA.
 async function recoveryKeyHashForServer(recoveryKey) {
     const normalized = normalizeRecoveryKey(recoveryKey);
     const data = new TextEncoder().encode(normalized);
@@ -76,12 +86,14 @@ async function recoveryKeyHashForServer(recoveryKey) {
 }
 
 
+// Gera uma recovery key aleatória de alta entropia.
 function generateRecoveryKey() {
     const recoveryKeyBytes = crypto.getRandomValues(new Uint8Array(32));
     return arrayBufferToBase64Url(recoveryKeyBytes.buffer);
 }
 
 
+// Converte e valida uma recovery key antes de a usar como chave.
 function recoveryKeyToArrayBuffer(recoveryKey) {
     const clean = normalizeRecoveryKey(recoveryKey);
     const buffer = base64UrlToArrayBuffer(clean);
@@ -94,6 +106,7 @@ function recoveryKeyToArrayBuffer(recoveryKey) {
 }
 
 
+// Importa a recovery key como chave AES-GCM.
 async function importRecoveryAesKey(recoveryKey) {
     const recoveryKeyBuffer = recoveryKeyToArrayBuffer(recoveryKey);
 
@@ -109,6 +122,7 @@ async function importRecoveryAesKey(recoveryKey) {
 }
 
 
+// Deriva uma chave AES a partir da password usando PBKDF2.
 async function derivePrivateKeyEncryptionKey(password, saltBase64, iterations = KDF_ITERATIONS) {
     const passwordKey = await crypto.subtle.importKey(
         "raw",
@@ -136,6 +150,7 @@ async function derivePrivateKeyEncryptionKey(password, saltBase64, iterations = 
 }
 
 
+// Cifra a chave privada do utilizador com uma chave derivada da password.
 async function encryptPrivateKeyForPassword(privateKeyRaw, password) {
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const privateKeyIv = crypto.getRandomValues(new Uint8Array(12));
@@ -168,6 +183,7 @@ async function encryptPrivateKeyForPassword(privateKeyRaw, password) {
 }
 
 
+// Cifra a mesma chave privada com a recovery key.
 async function encryptPrivateKeyForRecoveryKey(privateKeyRaw, recoveryKey) {
     const recoveryKeyIv = crypto.getRandomValues(new Uint8Array(12));
     const recoveryAesKey = await importRecoveryAesKey(recoveryKey);
@@ -188,6 +204,7 @@ async function encryptPrivateKeyForRecoveryKey(privateKeyRaw, recoveryKey) {
 }
 
 
+// Gera o par de chaves do utilizador e os materiais cifrados do registo.
 async function generateUserCryptoMaterial(password) {
     const keyPair = await crypto.subtle.generateKey(
         {
@@ -220,6 +237,7 @@ async function generateUserCryptoMaterial(password) {
 }
 
 
+// Recupera a chave privada com a recovery key e volta a cifrá-la com nova password.
 async function rebuildUserCryptoMaterialFromRecovery(newPassword, recoveryKey, resetPayload) {
     const recoveryAesKey = await importRecoveryAesKey(recoveryKey);
 
@@ -249,6 +267,7 @@ async function rebuildUserCryptoMaterialFromRecovery(newPassword, recoveryKey, r
 }
 
 
+// Decifra e importa a chave privada do utilizador após login.
 async function decryptUserPrivateKey(password, loginResponse) {
     const privateKeyEncryptionKey = await derivePrivateKeyEncryptionKey(
         password,
@@ -278,6 +297,7 @@ async function decryptUserPrivateKey(password, loginResponse) {
 }
 
 
+// Importa a chave pública do utilizador para cifrar chaves de ficheiros.
 async function importUserPublicKey(publicKeyBase64) {
     return await crypto.subtle.importKey(
         "spki",
@@ -297,12 +317,14 @@ window.cloudCryptoState = window.cloudCryptoState || {
 };
 
 
+// Calcula SHA-256 e devolve o resultado em Base64URL.
 async function sha256Base64(buffer) {
     const digest = await crypto.subtle.digest("SHA-256", buffer);
     return arrayBufferToBase64Url(digest);
 }
 
 
+// Cifra um ficheiro no browser e cifra a respetiva chave AES com RSA-OAEP.
 async function encryptFileForUpload(file) {
     if (!window.cloudCryptoState?.publicKey) {
         throw new Error("Chave pública não carregada. Termine sessão e faça login novamente.");
@@ -363,6 +385,7 @@ async function encryptFileForUpload(file) {
     }
 }
 
+// Decifra a chave do ficheiro e depois decifra o conteúdo recebido do backend.
 async function decryptDownloadedFile(encryptedBlob, encryptedFileKeyBase64, fileIvBase64) {
     if (!window.cloudCryptoState?.privateKey) {
         throw new Error("Chave privada não carregada. Introduza novamente a password para continuar.");

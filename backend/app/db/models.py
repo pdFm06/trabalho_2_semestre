@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 
 class Folder(Base):
+    # Representa uma pasta da Drive do utilizador.
     __tablename__ = "folders"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -15,6 +16,7 @@ class Folder(Base):
 
 
 class File(Base):
+    # Representa os metadados de um ficheiro cifrado e dividido no MinIO.
     __tablename__ = "files"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -39,6 +41,7 @@ class File(Base):
 
 
 class User(Base):
+    # Representa o utilizador, credenciais, chaves cifradas, MFA e quotas.
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)

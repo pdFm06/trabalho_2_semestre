@@ -1,5 +1,4 @@
-
-
+// Ficheiro responsável por frontend/public/layout/layout.js.
 
 window.sidebarLoaded = (async function loadSidebar() {
     const container = document.getElementById("sidebar-container");

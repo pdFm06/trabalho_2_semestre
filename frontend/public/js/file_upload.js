@@ -1,3 +1,4 @@
+// Ficheiro responsável por frontend/public/js/file_upload.js.
 const KEYSERVER_BASE_URL = window.KEYSERVER_BASE_URL || "http://localhost:9002";
 
 const dropZone = document.getElementById("dropZone");
@@ -9,6 +10,7 @@ const fileItems = document.getElementById("fileItems");
 let selectedFiles = [];
 let isUploading = false;
 
+// Garante que existe um container para mensagens de upload.
 function ensureAlertContainer() {
     if (!document.getElementById("uploadAlertContainer")) {
         const container = document.createElement("div");
@@ -22,6 +24,7 @@ function ensureAlertContainer() {
     }
 }
 
+// Escapa texto antes de o inserir em HTML para reduzir risco de XSS.
 function escapeHTML(value) {
     return String(value)
         .replace(/&/g, "&amp;")
@@ -32,15 +35,18 @@ function escapeHTML(value) {
 }
 
 
+// Aguarda um intervalo de tempo usado em tentativas repetidas.
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Identifica erros de rede recuperáveis durante chamadas fetch.
 function isFetchNetworkError(error) {
     const message = String(error?.message || "").toLowerCase();
     return error instanceof TypeError || message.includes("fetch") || message.includes("network");
 }
 
+// Repete pedidos de rede em caso de falhas temporárias.
 async function fetchWithRetry(url, options, retryOptions = {}) {
     const attempts = retryOptions.attempts ?? 5;
     const delayMs = retryOptions.delayMs ?? 700;
@@ -72,6 +78,7 @@ async function fetchWithRetry(url, options, retryOptions = {}) {
     throw lastError || new Error("Erro de rede no pedido HTTP.");
 }
 
+// Mostra mensagens de estado do upload.
 function showAlert(message, type = "info", autoDismiss = true) {
     ensureAlertContainer();
     const container = document.getElementById("uploadAlertContainer");
@@ -96,6 +103,7 @@ function showAlert(message, type = "info", autoDismiss = true) {
     }
 }
 
+// Atualiza o texto de progresso do upload.
 function setUploadStatus(message) {
     const statusElement = document.getElementById("uploadStatus");
     if (statusElement) {
@@ -103,12 +111,14 @@ function setUploadStatus(message) {
     }
 }
 
+// Ativa ou desativa o estado visual de upload em curso.
 function setUploadingState(uploading) {
     isUploading = uploading;
     uploadBtn.disabled = uploading || selectedFiles.length === 0;
     uploadBtn.textContent = uploading ? "A enviar..." : "Enviar Ficheiros";
 }
 
+// Garante que a chave pública do utilizador está carregada antes do upload.
 async function ensurePublicKeyLoaded() {
     if (window.cloudCryptoState?.publicKey) {
         return;
@@ -121,6 +131,7 @@ async function ensurePublicKeyLoaded() {
     window.cloudCryptoState.publicKey = publicKey;
 }
 
+// Verifica se o keyserver está acessível antes de guardar chaves.
 async function ensureKeyserverAvailable() {
     const response = await fetchWithRetry(`${KEYSERVER_BASE_URL}/health`, {
         method: "GET"
@@ -134,6 +145,7 @@ async function ensureKeyserverAvailable() {
     }
 }
 
+// Envia o ficheiro já cifrado para o backend.
 async function uploadEncryptedFileToBackend(file, encryptedMaterial) {
     const token = getAccessToken();
     if (!token) {
@@ -169,6 +181,7 @@ async function uploadEncryptedFileToBackend(file, encryptedMaterial) {
 }
 
 
+// Remove um ficheiro do backend caso a gravação da chave falhe.
 async function deleteBackendFile(fileId) {
     const token = getAccessToken();
     if (!token || !fileId) {
@@ -185,6 +198,7 @@ async function deleteBackendFile(fileId) {
     return response.ok;
 }
 
+// Guarda a chave AES cifrada no keyserver.
 async function storeEncryptedFileKey(fileId, encryptedMaterial) {
     const token = getAccessToken();
     if (!token) {
@@ -309,12 +323,14 @@ uploadBtn?.addEventListener("click", async () => {
     }
 });
 
+// Processa a lista de ficheiros escolhidos para upload.
 function handleFiles(files) {
     selectedFiles = Array.from(files || []);
     updateFileList();
     uploadBtn.disabled = selectedFiles.length === 0;
 }
 
+// Atualiza a lista visual dos ficheiros selecionados.
 function updateFileList() {
     fileItems.innerHTML = "";
 
@@ -338,6 +354,7 @@ function updateFileList() {
     });
 }
 
+// Remove um ficheiro da seleção antes do upload.
 function removeFile(index) {
     if (isUploading) {
         return;
@@ -347,6 +364,7 @@ function removeFile(index) {
     uploadBtn.disabled = selectedFiles.length === 0;
 }
 
+// Formata o tamanho de ficheiros na interface de upload.
 function formatFileSize(bytes) {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;

@@ -15,6 +15,7 @@ def store_file_key(
     db:       Session = Depends(get_db),
     owner_id: int     = Depends(get_current_user_id),
 ):
+    # Guarda ou atualiza a chave cifrada de um ficheiro no keyserver.
     return crud.upsert_file_key(db, payload, owner_id)
 
 
@@ -24,6 +25,7 @@ def get_file_key(
     db:       Session = Depends(get_db),
     owner_id: int     = Depends(get_current_user_id),
 ):
+    # Obtém a chave cifrada de um ficheiro pertencente ao utilizador autenticado.
     db_file_key = crud.get_file_key(db, file_id, owner_id)
     if not db_file_key:
         raise HTTPException(
@@ -39,6 +41,7 @@ def delete_file_key(
     db:       Session = Depends(get_db),
     owner_id: int     = Depends(get_current_user_id),
 ):
+    # Remove a chave cifrada associada a um ficheiro do utilizador autenticado.
     db_file_key = crud.delete_file_key(db, file_id, owner_id)
     if not db_file_key:
         raise HTTPException(

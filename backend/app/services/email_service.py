@@ -9,6 +9,7 @@ from app.core.config import settings
 
 
 class EmailSendError(RuntimeError):
+    # Representa erros ocorridos durante o envio de emails.
     pass
 
 
@@ -16,10 +17,12 @@ _LOCAL_SMTP_HOSTS = {"mailpit", "localhost", "127.0.0.1", "0.0.0.0"}
 
 
 def _is_valid_email(value: str) -> bool:
+    # Valida de forma simples o formato de um endereço de email.
     return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", value or ""))
 
 
 def _validate_email_settings() -> None:
+    # Confirma que as configurações SMTP estão preenchidas e coerentes.
     missing = []
 
     if not settings.SMTP_HOST:
@@ -56,6 +59,7 @@ def _validate_email_settings() -> None:
 
 
 def _send_email(to_email: str, subject: str, text_body: str, html_body: str | None = None) -> None:
+    # Envia uma mensagem por SMTP para o destinatário indicado.
     _validate_email_settings()
 
     if not _is_valid_email(to_email):
@@ -88,6 +92,7 @@ def _send_email(to_email: str, subject: str, text_body: str, html_body: str | No
 
 
 def send_password_reset_code(to_email: str, code: str, expires_in_minutes: int) -> None:
+    # Envia o código de recuperação de password para o email do utilizador.
     subject = "Código de redefinição de password"
     text_body = (
         "Olá,\n\n"
@@ -109,6 +114,7 @@ def send_password_reset_code(to_email: str, code: str, expires_in_minutes: int) 
 
 
 def send_mfa_code(to_email: str, code: str, expires_in_minutes: int, purpose: str) -> None:
+    # Envia o código MFA para o email do utilizador.
     purpose_label = {
         "login": "iniciar sessão",
         "toggle": "alterar as definições de MFA",

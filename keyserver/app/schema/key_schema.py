@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class FileKeyCreate(BaseModel):
+    # Define os dados recebidos pelo keyserver para guardar uma chave cifrada.
     file_id:            int
     encrypted_file_key: str = Field(min_length=32)
     key_algorithm:      str = "RSA-OAEP-4096-SHA-256"
@@ -9,6 +10,7 @@ class FileKeyCreate(BaseModel):
 
 
 class FileKeyResponse(BaseModel):
+    # Define os dados devolvidos pelo keyserver sobre uma chave cifrada.
     file_id:            int
     owner_id:           int
     encrypted_file_key: str

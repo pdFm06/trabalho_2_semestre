@@ -1,3 +1,4 @@
+// Ficheiro responsável por frontend/public/js/bootstrap_alerts.js.
 function escapeHTML(value) {
     return String(value)
         .replace(/&/g, "&amp;")
@@ -7,6 +8,7 @@ function escapeHTML(value) {
         .replace(/'/g, "&#039;");
 }
 
+// Mostra uma mensagem Bootstrap dinâmica ao utilizador.
 function showBootstrapAlert(message, type = "info", options = {}) {
     const containerId = options.containerId || "alertContainer";
     const container = document.getElementById(containerId);
@@ -32,6 +34,7 @@ function showBootstrapAlert(message, type = "info", options = {}) {
     `;
 }
 
+// Mostra a recovery key com instruções e botão de cópia.
 function showRecoveryKeyAlert(recoveryKey, options = {}) {
     const containerId = options.containerId || "alertContainer";
     const container = document.getElementById(containerId);

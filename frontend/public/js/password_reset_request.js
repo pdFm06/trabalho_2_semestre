@@ -1,3 +1,4 @@
+// Ficheiro responsável por frontend/public/js/password_reset_request.js.
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("passwordResetRequestForm");
     if (!form) {

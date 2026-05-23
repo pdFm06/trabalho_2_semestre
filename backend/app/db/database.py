@@ -9,6 +9,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 def get_db():
+    # Fornece uma sessão de base de dados e garante o seu encerramento no fim do pedido.
     db = SessionLocal()
     try:
         yield db          # "entrega" a sessão à rota

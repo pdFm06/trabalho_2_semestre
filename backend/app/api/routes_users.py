@@ -41,6 +41,7 @@ MFA_CODE_EXPIRE_MINUTES = 10
 
 
 def _email_delivery_error() -> HTTPException:
+    # Converte erros de envio de email numa resposta HTTP adequada.
     return HTTPException(
         status_code=status.HTTP_502_BAD_GATEWAY,
         detail=(
@@ -51,10 +52,12 @@ def _email_delivery_error() -> HTTPException:
 
 
 def _maybe_return_code(code: str | None) -> str | None:
+    # Inclui códigos na resposta apenas quando esta opção está ativa para desenvolvimento.
     return code if settings.EMAIL_RETURN_CODES else None
 
 
 def _token_response_for_user(user: User) -> TokenResponse:
+    # Constrói a resposta de autenticação com JWT e material criptográfico cifrado.
     token, expires_in = create_access_token(subject=user.id)
 
     return TokenResponse(
@@ -73,6 +76,7 @@ def _token_response_for_user(user: User) -> TokenResponse:
 
 
 def _create_mfa_challenge(db: Session, user: User, purpose: str) -> tuple[str, str]:
+    # Gera um desafio MFA, guarda o código como hash e envia o código por email.
     code = f"{secrets.randbelow(1_000_000):06d}"
     challenge_id = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=MFA_CODE_EXPIRE_MINUTES)
@@ -90,6 +94,7 @@ def _create_mfa_challenge(db: Session, user: User, purpose: str) -> tuple[str, s
 
 
 def _validate_mfa_code(user: User, challenge_id: str | None, code: str | None, purpose: str) -> None:
+    # Valida o código MFA recebido e confirma se ainda está dentro do prazo.
     if (
         not challenge_id
         or not code
@@ -114,6 +119,7 @@ def register_user(
     user_create: UserCreate,
     db: Session = Depends(get_db),
 ) -> UserResponse:
+    # Regista um utilizador novo com password cifrada, chaves públicas/privadas e recovery key.
     existing_user = crud.get_user_by_email(
         db=db,
         email=str(user_create.email).lower(),
@@ -142,6 +148,7 @@ def login_user(
     user_data: UserLogin,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
+    # Valida credenciais e inicia o fluxo de login, com ou sem MFA.
     user = crud.get_user_by_email(db, str(user_data.email).lower())
 
     if not user or not verify_password(user_data.password, user.password_hash):
@@ -173,6 +180,7 @@ def verify_login_mfa(
     mfa_data: MfaLoginVerify,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
+    # Confirma o código MFA do login e emite o token de acesso.
     user = crud.get_user_by_email(db, str(mfa_data.email).lower())
 
     if not user or not verify_password(mfa_data.password, user.password_hash):
@@ -192,6 +200,7 @@ def login_with_recovery_key(
     mfa_data: MfaLoginRecovery,
     db: Session = Depends(get_db),
 ) -> TokenResponse:
+    # Permite concluir o login MFA usando a recovery key como alternativa ao email.
     user = crud.get_user_by_email(db, str(mfa_data.email).lower())
 
     if not user or not verify_password(mfa_data.password, user.password_hash):
@@ -215,6 +224,7 @@ def login_with_recovery_key(
 
 @router.get("/me", response_model=UserMeResponse)
 def read_current_user(current_user: User = Depends(get_current_user)) -> UserMeResponse:
+    # Devolve os dados do utilizador autenticado e o material criptográfico cifrado necessário ao frontend.
     return current_user
 
 
@@ -223,6 +233,7 @@ def request_mfa_toggle(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MfaToggleRequestResponse:
+    # Gera e envia por email o código necessário para ativar ou desativar MFA.
     challenge_id, code = _create_mfa_challenge(db, current_user, purpose="toggle")
 
     try:
@@ -245,6 +256,7 @@ def confirm_mfa_toggle(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> MfaToggleResponse:
+    # Confirma o código ou recovery key e ativa/desativa o MFA.
     used_code = bool(toggle_data.code)
     used_recovery = bool(toggle_data.recovery_key_hash)
 
@@ -279,6 +291,7 @@ def request_password_reset(
     reset_request: PasswordResetRequest,
     db: Session = Depends(get_db),
 ) -> PasswordResetRequestResponse:
+    # Inicia a recuperação de password e envia um código por email.
     email = str(reset_request.email).lower()
     user = crud.get_user_by_email(db, email)
 
@@ -315,6 +328,7 @@ def verify_password_reset_code(
     reset_verify: PasswordResetVerify,
     db: Session = Depends(get_db),
 ) -> PasswordResetVerifyResponse:
+    # Valida o código de recuperação e devolve o material necessário para recuperar a chave privada.
     user = crud.get_user_by_email(db, str(reset_verify.email).lower())
 
     if (
@@ -343,6 +357,7 @@ def confirm_password_reset(
     reset_data: PasswordResetConfirm,
     db: Session = Depends(get_db),
 ) -> PasswordResetConfirmResponse:
+    # Atualiza a password e o material criptográfico após validação do código e recovery key.
     user = crud.get_user_by_email(db, str(reset_data.email).lower())
 
     if (

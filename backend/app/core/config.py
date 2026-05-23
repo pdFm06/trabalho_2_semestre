@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # Agrupa e carrega as configurações da aplicação a partir das variáveis de ambiente.
     DATABASE_URL: str
 
     model_config = SettingsConfigDict(
@@ -57,6 +58,7 @@ class Settings(BaseSettings):
 
     @property
     def MINIO_NODES(self) -> list[dict[str, str]]:
+        # Devolve a configuração das três instâncias MinIO usadas para guardar as partes dos ficheiros.
         return [
             {
                 "node_id": "minio1",
@@ -83,6 +85,7 @@ class Settings(BaseSettings):
 
     @property
     def MINIO_BUCKETS(self) -> list[str]:
+        # Mantém compatibilidade com código antigo que espera uma lista de buckets MinIO.
         return [node["bucket"] for node in self.MINIO_NODES]
 
     FILE_PARTS: int = 3

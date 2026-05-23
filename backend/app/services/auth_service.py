@@ -22,14 +22,17 @@ security = HTTPBearer(auto_error=False)
 
 
 def hash_password(password: str) -> str:
+    # Gera o hash seguro de uma password.
     return password_context.hash(password)
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
+    # Compara uma password em claro com o respetivo hash.
     return password_context.verify(plain_password, password_hash)
 
 
 def create_access_token(subject: str | int, extra_claims: dict[str, Any] | None = None) -> tuple[str, int]:
+    # Cria um JWT com tempo de expiração.
     expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     expire = datetime.now(timezone.utc) + expires_delta
 
@@ -52,6 +55,7 @@ def create_access_token(subject: str | int, extra_claims: dict[str, Any] | None 
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
+    # Valida e descodifica um JWT.
     try:
         payload = jwt.decode(
             token,
@@ -79,6 +83,7 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
+    # Obtém o utilizador autenticado a partir do token Bearer.
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -110,6 +115,7 @@ def get_current_user(
 
 
 def validate_password_strength(password: str) -> str:
+    # Valida regras mínimas de complexidade da password.
     if not re.search(r"\d", password):
         raise ValueError("A password deve conter pelo menos um número.")
     if not re.search(r"[A-Z]", password):

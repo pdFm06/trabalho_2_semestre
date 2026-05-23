@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # Agrupa e carrega as configurações da aplicação a partir das variáveis de ambiente.
     DATABASE_URL:    str = "postgresql://keyuser:keypassword@keydb:5432/keydb"
     JWT_SECRET_KEY:  str = "dev-only-change-this-secret-key-before-production"
     JWT_ALGORITHM:   str = "HS256"

@@ -1,4 +1,5 @@
 services: 
+  # Base de dados principal da aplicação.
   db:
     image: postgres:16
     environment:
@@ -13,16 +14,18 @@ services:
       timeout: 5s
       retries: 10
 
+  # Interface administrativa opcional para consultar as bases de dados.
   pgadmin:
     image: dpage/pgadmin4
     environment:
       PGADMIN_DEFAULT_EMAIL:    ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-    #ports:
-      #- "5080:80"
+    ports:
+      - "5080:80"
     depends_on:
       - db
 
+  # Servidor web que disponibiliza a interface HTML/CSS/JavaScript.
   frontend:
     build: ./frontend
     ports:
@@ -30,6 +33,7 @@ services:
     volumes:
       - ./frontend/public:/usr/share/nginx/html
 
+  # API principal responsável por autenticação, ficheiros, pastas e MinIO.
   backend:
     build: ./backend
     ports:
@@ -78,6 +82,7 @@ services:
 
       MINIO_SECURE: "false"
 
+  # Base de dados usada exclusivamente pelo keyserver.
   keydb:
     image: postgres:16
     environment:
@@ -92,6 +97,7 @@ services:
       timeout: 5s
       retries: 10
 
+  # Serviço responsável por guardar e devolver chaves de ficheiros cifradas.
   keyserver:
     build: ./keyserver
     ports:
@@ -104,6 +110,7 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       JWT_ALGORITHM:  ${JWT_ALGORITHM}
 
+  # Primeira instância MinIO, responsável por uma parte de cada ficheiro.
   minio1:
     image: minio/minio
     command: server /data --console-address ":9001"
@@ -113,6 +120,7 @@ services:
     volumes:
       - minio1_data:/data
 
+  # Segunda instância MinIO, responsável por uma parte de cada ficheiro.
   minio2:
     image: minio/minio
     command: server /data --console-address ":9001"
@@ -122,6 +130,7 @@ services:
     volumes:
       - minio2_data:/data
 
+  # Terceira instância MinIO, responsável por uma parte de cada ficheiro.
   minio3:
     image: minio/minio
     command: server /data --console-address ":9001"

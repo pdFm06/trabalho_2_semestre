@@ -1,3 +1,4 @@
+// Ficheiro responsável por frontend/public/js/register.js.
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("form");
 
@@ -19,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "key_algorithm"
     ];
 
+    // Executa a lógica associada a validatePassword.
     function validatePassword(password) {
         const errors = [];
         if (password.length < 12)          errors.push("A password deve ter pelo menos 12 caracteres.");
@@ -29,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return errors;
     }
 
+    // Executa a lógica associada a parseFriendlyRegisterError.
     function parseFriendlyRegisterError(message) {
         try {
             const parsed = JSON.parse(message);

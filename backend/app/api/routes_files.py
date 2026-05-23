@@ -26,6 +26,7 @@ async def upload_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Recebe um ficheiro já cifrado, divide-o em partes e guarda-as nas instâncias MinIO.
     data = await file.read()
 
     if not data:
@@ -92,6 +93,7 @@ def download_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Reconstrói o ficheiro cifrado a partir das partes guardadas e devolve-o ao cliente.
     db_file = crud.get_file_by_id_and_owner(db, file_id=file_id, owner_id=current_user.id)
 
     if not db_file:
@@ -101,6 +103,7 @@ def download_file(
         )
 
     def file_stream_generator():
+        """Lê cada parte do ficheiro no MinIO e envia os bytes por streaming."""
         for part in db_file.parts:
             bucket = part.get("bucket")
             object_name = part.get("object_name")
@@ -125,6 +128,7 @@ def get_my_files(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Lista todos os ficheiros pertencentes ao utilizador autenticado.
     return crud.get_files_by_owner(db=db, owner_id=current_user.id)
 
 
@@ -134,6 +138,7 @@ def get_drive_folder(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Devolve o conteúdo da pasta atual da Drive, incluindo breadcrumbs, pastas e ficheiros.
     current_folder = None
     if folder_id is not None:
         current_folder = crud.get_folder_by_id_and_owner(db, folder_id, current_user.id)
@@ -156,6 +161,7 @@ def list_folders(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Lista todas as pastas do utilizador autenticado.
     return crud.get_folders_by_owner(db, current_user.id)
 
 
@@ -165,6 +171,7 @@ def create_folder(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Cria uma nova pasta para o utilizador autenticado.
     if folder_data.parent_id is not None and not crud.get_folder_by_id_and_owner(db, folder_data.parent_id, current_user.id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -188,6 +195,7 @@ def delete_folder(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Elimina uma pasta vazia pertencente ao utilizador autenticado.
     folder = crud.get_folder_by_id_and_owner(db, folder_id, current_user.id)
     if not folder:
         raise HTTPException(
@@ -212,6 +220,7 @@ def move_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Move um ficheiro para outra pasta ou para a raiz da Drive.
     try:
         db_file = crud.move_file_to_folder(
             db=db,
@@ -237,6 +246,7 @@ def toggle_favorite(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Alterna o estado de favorito de um ficheiro do utilizador.
     db_file = crud.toggle_favorite(db, file_id=file_id, owner_id=current_user.id)
     if not db_file:
         raise HTTPException(
@@ -247,6 +257,7 @@ def toggle_favorite(
 
 
 def _delete_file_key_from_keyserver(file_id: int, authorization_header: str | None) -> bool:
+    # Pede ao keyserver para remover a chave cifrada associada a um ficheiro apagado.
     if not authorization_header:
         return False
 
@@ -273,6 +284,7 @@ def delete_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Apaga um ficheiro, remove as suas partes no MinIO e tenta apagar a chave no keyserver.
     db_file = crud.get_file_by_id_and_owner(db, file_id=file_id, owner_id=current_user.id)
 
     if not db_file:

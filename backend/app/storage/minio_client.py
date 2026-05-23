@@ -21,6 +21,7 @@ _node_by_id: dict[str, dict[str, str]] = {node["node_id"]: node for node in _nod
 
 
 def _get_node_by_index(node_index: int) -> dict[str, str]:
+    # Obtém a configuração MinIO correspondente ao índice da parte.
     try:
         return _nodes[node_index]
     except IndexError as exc:
@@ -28,6 +29,7 @@ def _get_node_by_index(node_index: int) -> dict[str, str]:
 
 
 def _get_node_by_id(node_id: str | None, part_number: int | None = None) -> dict[str, str]:
+    # Obtém a configuração MinIO correspondente ao identificador do nó.
     if node_id:
         node = _node_by_id.get(node_id)
         if node:
@@ -41,6 +43,7 @@ def _get_node_by_id(node_id: str | None, part_number: int | None = None) -> dict
 
 
 def _ensure_bucket(node: dict[str, str], attempts: int = 12, delay_seconds: float = 0.5) -> None:
+    # Garante que o bucket existe antes de gravar objetos no MinIO.
     bucket = node["bucket"]
     client = _clients[node["node_id"]]
     last_error = None
@@ -74,6 +77,7 @@ def upload_part(
     data: bytes,
     original_filename: str,
 ) -> dict:
+    # Guarda uma parte cifrada do ficheiro na instância MinIO correspondente.
     node = _get_node_by_index(node_index)
     bucket = node["bucket"]
     client = _clients[node["node_id"]]
@@ -111,6 +115,7 @@ def delete_part(
     node_id: str | None = None,
     part_number: int | None = None,
 ) -> None:
+    # Remove uma parte de ficheiro da instância MinIO onde está guardada.
     node = _get_node_by_id(node_id=node_id, part_number=part_number)
     client = _clients[node["node_id"]]
     bucket_name = bucket or node["bucket"]
@@ -132,6 +137,7 @@ def download_part(
     node_id: str | None = None,
     part_number: int | None = None,
 ) -> bytes:
+    # Obtém uma parte de ficheiro a partir da instância MinIO correta.
     node = _get_node_by_id(node_id=node_id, part_number=part_number)
     client = _clients[node["node_id"]]
     bucket_name = bucket or node["bucket"]

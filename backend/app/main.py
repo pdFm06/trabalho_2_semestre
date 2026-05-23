@@ -26,8 +26,10 @@ app.include_router(routes_users.router)
 
 @app.get("/health")
 def health_check() -> dict[str, str]:
+    # Devolve o estado do serviço para verificações de saúde.
     return {"status": "ok"}
 
 @app.get("/")
 def root():
+    # Devolve uma resposta simples para confirmar que o serviço está ativo.
     return {"message": "API running"}

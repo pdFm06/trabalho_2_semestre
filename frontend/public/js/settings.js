@@ -1,11 +1,14 @@
+// Ficheiro responsável por frontend/public/js/settings.js.
 const THEME_STORAGE_KEY = "app_theme";
 let pendingMfaToggleChallengeId = null;
 
+// Lê o tema guardado no browser.
 function getSavedTheme() {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
     return saved === "dark" ? "dark" : "light";
 }
 
+// Atualiza o item ativo da sidebar.
 function setSidebarActiveLink(viewName) {
     document.querySelectorAll("[data-app-view-link]").forEach((link) => {
         const isActive = link.dataset.appViewLink === viewName;
@@ -18,6 +21,7 @@ function setSidebarActiveLink(viewName) {
     });
 }
 
+// Aplica o tema claro ou escuro na aplicação.
 function applyTheme(theme) {
     const normalizedTheme = theme === "dark" ? "dark" : "light";
 
@@ -34,6 +38,7 @@ function applyTheme(theme) {
     if (darkRadio) darkRadio.checked = normalizedTheme === "dark";
 }
 
+// Mostra uma view e esconde as restantes.
 function showView(viewName, activeSidebarLink = null) {
     const driveView = document.getElementById("driveView");
     const settingsView = document.getElementById("settingsView");
@@ -50,21 +55,25 @@ function showView(viewName, activeSidebarLink = null) {
     setSidebarActiveLink(activeLink);
 }
 
+// Ativa a view da Drive.
 function showDriveView() {
     showView("drive", "drive");
     window.loadDriveFolders?.("root");
 }
 
+// Ativa a view inicial com todos os ficheiros.
 function showHomeView() {
     showView("drive", "home");
     window.loadHomeFiles?.();
 }
 
+// Ativa a view de definições.
 function showSettingsView() {
     showView("settings", "settings");
     refreshMfaSettings();
 }
 
+// Mostra mensagens na secção de definições.
 function settingsAlert(message, type = "info") {
     const container = document.getElementById("mfaSettingsAlert");
     if (!container) return;
@@ -77,6 +86,7 @@ function settingsAlert(message, type = "info") {
     `;
 }
 
+// Escapa texto usado especificamente nas definições.
 function escapeHtmlLocal(value) {
     return String(value)
         .replace(/&/g, "&amp;")
@@ -86,6 +96,7 @@ function escapeHtmlLocal(value) {
         .replace(/'/g, "&#039;");
 }
 
+// Atualiza o estado visual do MFA nas definições.
 function refreshMfaSettings() {
     const enabled = Boolean(window.currentUser?.mfa_enabled);
     const badge = document.getElementById("mfaStatusBadge");
@@ -107,6 +118,7 @@ function refreshMfaSettings() {
     }
 }
 
+// Pede o envio de um código MFA por email.
 async function requestMfaCode() {
     try {
         const response = await apiRequest("/users/mfa/request-toggle", "POST", {}, true);
@@ -126,6 +138,7 @@ async function requestMfaCode() {
     }
 }
 
+// Ativa ou desativa MFA usando o código recebido por email.
 async function confirmMfaToggleWithCode() {
     const code = document.getElementById("mfaCodeInput")?.value.trim();
     const enable = !Boolean(window.currentUser?.mfa_enabled);
@@ -154,6 +167,7 @@ async function confirmMfaToggleWithCode() {
     }
 }
 
+// Ativa ou desativa MFA usando a recovery key.
 async function confirmMfaToggleWithRecoveryKey() {
     const recoveryKey = document.getElementById("mfaRecoveryKeyInput")?.value.trim();
     const enable = !Boolean(window.currentUser?.mfa_enabled);
@@ -180,6 +194,7 @@ async function confirmMfaToggleWithRecoveryKey() {
     }
 }
 
+// Inicializa tema, navegação e eventos da página principal.
 function initThemeSettings() {
     applyTheme(getSavedTheme());
 

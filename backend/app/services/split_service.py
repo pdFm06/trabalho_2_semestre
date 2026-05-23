@@ -1,4 +1,5 @@
 def split_file(data: bytes, parts: int = 3) -> list[bytes]:
+    # Divide bytes de um ficheiro cifrado no número de partes definido.
     if parts <= 0:
         raise ValueError("O número de partes deve ser maior que zero.")
     if len(data) < parts:

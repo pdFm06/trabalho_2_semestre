@@ -1,5 +1,7 @@
+// Ficheiro responsável por frontend/public/js/login.js.
 let pendingMfaLogin = null;
 
+// Finaliza o login guardando o token e importando as chaves do utilizador.
 async function completeLogin(password, response) {
     if (!response?.access_token) {
         throw new Error("Resposta de login inválida: token em falta.");
@@ -20,6 +22,7 @@ async function completeLogin(password, response) {
     }, 700);
 }
 
+// Mostra erros no modal MFA.
 function showMfaError(message) {
     const alertEl = document.getElementById("mfaLoginAlert");
     if (alertEl) {
@@ -28,6 +31,7 @@ function showMfaError(message) {
     }
 }
 
+// Limpa mensagens antigas do modal MFA.
 function resetMfaAlert() {
     const alertEl = document.getElementById("mfaLoginAlert");
     if (alertEl) {
@@ -36,6 +40,7 @@ function resetMfaAlert() {
     }
 }
 
+// Garante que os eventos do modal MFA foram registados.
 function ensureMfaModal() {
     if (document.getElementById("mfaLoginModal")) return;
 
@@ -81,6 +86,7 @@ function ensureMfaModal() {
     document.getElementById("mfaLoginRecoveryBtn")?.addEventListener("click", submitMfaRecoveryLogin);
 }
 
+// Abre o modal para concluir o login com MFA.
 function showMfaModal(response) {
     ensureMfaModal();
 
@@ -104,6 +110,7 @@ function showMfaModal(response) {
     modal.show();
 }
 
+// Confirma o código MFA recebido por email.
 async function submitMfaCodeLogin() {
     if (!pendingMfaLogin) return;
 
@@ -131,6 +138,7 @@ async function submitMfaCodeLogin() {
     }
 }
 
+// Conclui o login MFA usando a recovery key.
 async function submitMfaRecoveryLogin() {
     if (!pendingMfaLogin) return;
 

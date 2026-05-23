@@ -1,3 +1,4 @@
+// Ficheiro responsável por frontend/public/js/file_drive.js.
 const filesGrid = document.getElementById("filesGrid");
 const fileSearchInput = document.getElementById("fileSearchInput");
 const folderBreadcrumb = document.getElementById("folderBreadcrumb");
@@ -30,6 +31,7 @@ let currentTypeFilter = null; // null = todos; "pdf" | "video" | "image" | "zip"
 let currentSection = "home";
 
 
+// Escapa valores apresentados na Drive para evitar injeção de HTML.
 function driveEscapeHTML(value) {
     return String(value ?? "")
         .replace(/&/g, "&amp;")
@@ -39,6 +41,7 @@ function driveEscapeHTML(value) {
         .replace(/'/g, "&#039;");
 }
 
+// Converte o tamanho do ficheiro para formato legível.
 function driveFormatFileSize(bytes) {
     const value = Number(bytes || 0);
     if (value === 0) return "0 Bytes";
@@ -48,6 +51,7 @@ function driveFormatFileSize(bytes) {
     return `${Math.round((value / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
 }
 
+// Formata datas no padrão português.
 function driveFormatDate(value) {
     if (!value) return "Data desconhecida";
     try {
@@ -60,6 +64,7 @@ function driveFormatDate(value) {
     }
 }
 
+// Escolhe o ícone do ficheiro com base na extensão.
 function getFileIcon(filename) {
     const lower = String(filename || "").toLowerCase();
     if (lower.endsWith(".mp4") || lower.endsWith(".mov") || lower.endsWith(".avi") || lower.endsWith(".mkv")) {
@@ -72,6 +77,7 @@ function getFileIcon(filename) {
 }
 
 
+// Classifica o tipo de ficheiro pela extensão.
 function getFileTypeCategory(filename) {
     const lower = String(filename || "").toLowerCase();
     if (lower.endsWith(".pdf")) return "pdf";
@@ -82,22 +88,26 @@ function getFileTypeCategory(filename) {
     return "other";
 }
 
+// Obtém a pasta ativa para uploads e navegação.
 function getCurrentFolderId() {
     return currentSection === "drive" ? currentFolderId : null;
 }
 
+// Obtém o nome da pasta atual para cabeçalhos e mensagens.
 function getCurrentFolderName() {
     if (currentFolderId === null) return "Drive";
     const fromBreadcrumbs = currentBreadcrumbs.find((f) => Number(f.id) === Number(currentFolderId));
     return fromBreadcrumbs?.name || "Pasta";
 }
 
+// Normaliza identificadores de pasta vindos do DOM ou da API.
 function normalizeFolderId(folderId) {
     if (folderId === undefined || folderId === null || folderId === "root" || folderId === "") return null;
     return Number(folderId);
 }
 
 
+// Mostra ou esconde controlos conforme a secção ativa.
 function setMainControlsForSection() {
     const isDrive = currentSection === "drive";
 
@@ -116,6 +126,7 @@ function setMainControlsForSection() {
     }
 }
 
+// Constrói a navegação hierárquica da Drive.
 function renderBreadcrumbs() {
     if (!folderBreadcrumb) return;
 
@@ -133,6 +144,7 @@ function renderBreadcrumbs() {
     folderBreadcrumb.innerHTML = html;
 }
 
+// Atualiza título, breadcrumbs e mensagens da view atual.
 function updateHeader() {
     setMainControlsForSection();
 
@@ -154,6 +166,7 @@ function updateHeader() {
     }
 }
 
+// Recalcula o espaço usado e atualiza a barra lateral.
 async function refreshStorageBar() {
     try {
         const allFilesForStorage = await apiRequest("/files", "GET", null, true);
@@ -168,10 +181,12 @@ async function refreshStorageBar() {
 }
 
 
+// Carrega todas as pastas para seleção em operações de mover ficheiro.
 async function loadAllFolders() {
     allFolders = await apiRequest("/folders", "GET", null, true) || [];
 }
 
+// Gera os cartões de pastas para a vista em grelha.
 function renderFolderCards(folders = currentFolders) {
     return folders.map((folder) => `
         <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
@@ -195,6 +210,7 @@ function renderFolderCards(folders = currentFolders) {
     `).join("");
 }
 
+// Gera as linhas de pastas para a vista em lista.
 function renderFolderRows(folders = currentFolders) {
     return folders.map((folder) => `
         <tr data-folder-id="${folder.id}">
@@ -218,6 +234,7 @@ function renderFolderRows(folders = currentFolders) {
     `).join("");
 }
 
+// Renderiza a Drive com pastas e ficheiros da localização atual.
 function renderDriveContents(folders = currentFolders, files = currentFiles) {
     if (!filesGrid) return;
     updateHeader();
@@ -276,11 +293,13 @@ function renderDriveContents(folders = currentFolders, files = currentFiles) {
     filesGrid.innerHTML = `${foldersHtml}${filesHtml}`;
 }
 
+// Renderiza apenas as pastas quando necessário.
 function renderDriveFolders(folders = currentFolders) {
     renderDriveContents(folders, currentFiles);
 }
 
 
+// Gera os cartões de ficheiros para a vista em grelha.
 function renderFileCards(files = currentFiles) {
     return files.map((file) => {
         const originalSize = file.original_file_size ?? file.file_size;
@@ -317,6 +336,7 @@ function renderFileCards(files = currentFiles) {
     }).join("");
 }
 
+// Gera as linhas de ficheiros para a vista em lista.
 function renderFileRows(files = currentFiles) {
     return files.map((file) => {
         const originalSize = file.original_file_size ?? file.file_size;
@@ -353,6 +373,7 @@ function renderFileRows(files = currentFiles) {
     }).join("");
 }
 
+// Renderiza a página inicial com todos os ficheiros do utilizador.
 function renderHomeFiles(files = currentFiles) {
     if (!filesGrid) return;
     updateHeader();
@@ -393,6 +414,7 @@ function renderHomeFiles(files = currentFiles) {
 }
 
 
+// Aplica pesquisa, favoritos e filtro de tipo à view atual.
 function filterCurrentView() {
     const query = String(fileSearchInput?.value || "").trim().toLowerCase();
 
@@ -447,6 +469,7 @@ function filterCurrentView() {
 }
 
 
+// Carrega todos os ficheiros do utilizador para a página inicial.
 async function loadHomeFiles() {
     if (!filesGrid) return;
     currentSection = "home";
@@ -481,6 +504,7 @@ async function loadHomeFiles() {
     }
 }
 
+// Carrega o conteúdo da pasta atual da Drive.
 async function loadDriveFolders(folderId = currentFolderId) {
     if (!filesGrid) return;
     currentSection = "drive";
@@ -515,6 +539,7 @@ async function loadDriveFolders(folderId = currentFolderId) {
     }
 }
 
+// Recarrega ficheiros conforme a secção ativa.
 async function loadUserFiles(folderId = null) {
     if (currentSection === "drive") {
         return loadDriveFolders(folderId ?? currentFolderId);
@@ -522,11 +547,13 @@ async function loadUserFiles(folderId = null) {
     return loadHomeFiles();
 }
 
+// Abre uma pasta da Drive e carrega o seu conteúdo.
 async function openFolder(folderId) {
     await loadDriveFolders(normalizeFolderId(folderId));
 }
 
 
+// Limpa o formulário de criação de pasta antes de abrir o modal.
 function resetFolderModal() {
     if (folderNameInput) folderNameInput.value = "";
     if (folderCreateError) {
@@ -536,6 +563,7 @@ function resetFolderModal() {
     updateHeader();
 }
 
+// Cria uma pasta dentro da localização atual da Drive.
 async function createFolderInCurrentFolder(event) {
     event?.preventDefault?.();
     const cleaned = String(folderNameInput?.value || "").trim();
@@ -567,6 +595,7 @@ async function createFolderInCurrentFolder(event) {
     }
 }
 
+// Elimina uma pasta vazia depois de confirmação.
 async function deleteFolder(folderId) {
     const folder = allFolders.find((item) => Number(item.id) === Number(folderId));
     const folderName = folder?.name || `pasta #${folderId}`;
@@ -586,6 +615,7 @@ async function deleteFolder(folderId) {
 }
 
 
+// Constrói o caminho textual de uma pasta para o seletor de destino.
 function getFolderPathLabel(folder) {
     const parts = [folder.name];
     let parentId = folder.parent_id;
@@ -602,6 +632,7 @@ function getFolderPathLabel(folder) {
     return `Drive / ${parts.join(" / ")}`;
 }
 
+// Preenche o seletor de pastas usado para mover ficheiros.
 function populateMoveFolderSelect(file) {
     if (!moveFolderSelect) return;
 
@@ -620,6 +651,7 @@ function populateMoveFolderSelect(file) {
     moveFolderSelect.innerHTML = options.join("");
 }
 
+// Abre o modal de mover ficheiro e prepara os dados do destino.
 async function openMoveFileModal(fileId) {
     const file = currentFiles.find((item) => Number(item.id) === Number(fileId));
     if (!file) return;
@@ -637,6 +669,7 @@ async function openMoveFileModal(fileId) {
     bootstrap.Modal.getOrCreateInstance(moveFileModalElement).show();
 }
 
+// Submete o pedido para mover o ficheiro para outra pasta.
 async function submitMoveFile(event) {
     event?.preventDefault?.();
     if (!selectedMoveFileId) return;
@@ -667,6 +700,7 @@ async function submitMoveFile(event) {
 }
 
 
+// Garante que existe um modal para pedir a password quando a chave privada não está em memória.
 function ensurePasswordModal() {
     let modalElement = document.getElementById("privateKeyPasswordModal");
     if (modalElement) return modalElement;
@@ -701,6 +735,7 @@ function ensurePasswordModal() {
     return document.getElementById("privateKeyPasswordModal");
 }
 
+// Pede a password para voltar a decifrar a chave privada após refresh.
 function askPasswordForPrivateKey() {
     const modalElement = ensurePasswordModal();
     const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
@@ -715,11 +750,13 @@ function askPasswordForPrivateKey() {
     return new Promise((resolve, reject) => {
         let settled = false;
 
+        // Executa a lógica associada a cleanup.
         const cleanup = () => {
             form.removeEventListener("submit", onSubmit);
             modalElement.removeEventListener("hidden.bs.modal", onHidden);
         };
 
+        // Executa a lógica associada a onHidden.
         const onHidden = () => {
             if (!settled) {
                 settled = true;
@@ -728,6 +765,7 @@ function askPasswordForPrivateKey() {
             }
         };
 
+        // Executa a lógica associada a onSubmit.
         const onSubmit = async (event) => {
             event.preventDefault();
             errorElement.classList.add("d-none");
@@ -763,12 +801,14 @@ function askPasswordForPrivateKey() {
     });
 }
 
+// Garante que a chave privada está disponível antes de iniciar o download.
 async function ensurePrivateKeyLoadedForDownload() {
     if (window.cloudCryptoState?.privateKey) return;
     await askPasswordForPrivateKey();
 }
 
 
+// Descarrega o ficheiro cifrado do backend.
 async function fetchEncryptedFile(fileId) {
     const token = getAccessToken();
     if (!token) throw new Error("Sessão expirada. Faça login novamente.");
@@ -786,6 +826,7 @@ async function fetchEncryptedFile(fileId) {
     return await response.blob();
 }
 
+// Obtém a chave AES cifrada do keyserver.
 async function fetchEncryptedFileKey(fileId) {
     const token = getAccessToken();
     if (!token) throw new Error("Sessão expirada. Faça login novamente.");
@@ -800,6 +841,7 @@ async function fetchEncryptedFileKey(fileId) {
     return data;
 }
 
+// Cria temporariamente um link para descarregar o ficheiro decifrado.
 function triggerPlainFileDownload(arrayBuffer, filename) {
     const blob = new Blob([arrayBuffer]);
     const url = URL.createObjectURL(blob);
@@ -812,6 +854,7 @@ function triggerPlainFileDownload(arrayBuffer, filename) {
     URL.revokeObjectURL(url);
 }
 
+// Coordena download, obtenção da chave, decifra e gravação local.
 async function downloadAndDecryptFile(fileId) {
     if (isDownloading) return;
 
@@ -848,6 +891,7 @@ async function downloadAndDecryptFile(fileId) {
 }
 
 
+// Alterna o estado de favorito de um ficheiro.
 async function toggleFavorite(fileId) {
     try {
         const updated = await apiRequest(`/files/${encodeURIComponent(fileId)}/favorite`, "PATCH", null, true);
@@ -863,6 +907,7 @@ async function toggleFavorite(fileId) {
 }
 
 
+// Mostra uma confirmação Bootstrap antes de apagar um ficheiro.
 function confirmDelete(filename, warningText = null) {
     return new Promise((resolve) => {
         const modalEl    = document.getElementById("confirmDeleteModal");
@@ -894,17 +939,20 @@ function confirmDelete(filename, warningText = null) {
 
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
 
+        // Executa a lógica associada a onConfirm.
         const onConfirm = () => {
             cleanup();
             modal.hide();
             resolve(true);
         };
 
+        // Executa a lógica associada a onDismiss.
         const onDismiss = () => {
             cleanup();
             resolve(false);
         };
 
+        // Executa a lógica associada a cleanup.
         const cleanup = () => {
             confirmBtn.removeEventListener("click", onConfirm);
             modalEl.removeEventListener("hidden.bs.modal", onDismiss);
@@ -917,6 +965,7 @@ function confirmDelete(filename, warningText = null) {
     });
 }
 
+// Apaga um ficheiro e atualiza a interface.
 async function deleteFile(fileId) {
     const file = currentFiles.find((item) => Number(item.id) === Number(fileId));
     const filename = file?.filename || `ficheiro #${fileId}`;

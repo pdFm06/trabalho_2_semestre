@@ -1,3 +1,4 @@
+// Ficheiro responsável por frontend/public/js/auth_guard.js.
 document.addEventListener("DOMContentLoaded", async () => {
     const token = getAccessToken();
 
@@ -37,6 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
+// Atualiza visualmente a barra de armazenamento do utilizador.
 function updateStorageBar(used, quota) {
     const bar  = document.getElementById("storageProgressBar");
     const text = document.getElementById("storageUsedText");
@@ -60,6 +62,7 @@ function updateStorageBar(used, quota) {
     }
 }
 
+// Formata bytes para uma unidade legível.
 function formatStorageBytes(bytes) {
     if (bytes === 0) return "0 B";
     const k = 1024;

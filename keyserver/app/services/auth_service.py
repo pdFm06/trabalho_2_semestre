@@ -10,6 +10,7 @@ security = HTTPBearer(auto_error=False)
 def get_current_user_id(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> int:
+    # Valida o JWT recebido e devolve o identificador do utilizador autenticado.
     if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

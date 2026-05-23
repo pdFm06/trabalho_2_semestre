@@ -6,10 +6,12 @@ from app.services.auth_service import hash_password
 
 
 def get_files_by_owner(db: Session, owner_id: int) -> list[File]:
+    # Obtém todos os ficheiros pertencentes a um utilizador.
     return db.query(File).filter(File.owner_id == owner_id).order_by(File.created_at.desc()).all()
 
 
 def get_files_by_owner_and_folder(db: Session, owner_id: int, folder_id: int | None) -> list[File]:
+    # Obtém os ficheiros de uma pasta específica do utilizador.
     query = db.query(File).filter(File.owner_id == owner_id)
     if folder_id is None:
         query = query.filter(File.folder_id.is_(None))
@@ -19,14 +21,17 @@ def get_files_by_owner_and_folder(db: Session, owner_id: int, folder_id: int | N
 
 
 def get_folder_by_id_and_owner(db: Session, folder_id: int, owner_id: int) -> Folder | None:
+    # Procura uma pasta pelo identificador e confirma que pertence ao utilizador.
     return db.query(Folder).filter(Folder.id == folder_id, Folder.owner_id == owner_id).first()
 
 
 def get_folders_by_owner(db: Session, owner_id: int) -> list[Folder]:
+    # Obtém todas as pastas de um utilizador.
     return db.query(Folder).filter(Folder.owner_id == owner_id).order_by(Folder.parent_id.asc().nullsfirst(), Folder.name.asc()).all()
 
 
 def get_folders_by_owner_and_parent(db: Session, owner_id: int, parent_id: int | None) -> list[Folder]:
+    # Obtém as subpastas de uma pasta específica.
     query = db.query(Folder).filter(Folder.owner_id == owner_id)
     if parent_id is None:
         query = query.filter(Folder.parent_id.is_(None))
@@ -36,6 +41,7 @@ def get_folders_by_owner_and_parent(db: Session, owner_id: int, parent_id: int |
 
 
 def get_folder_breadcrumbs(db: Session, folder: Folder | None, owner_id: int) -> list[Folder]:
+    # Constrói o caminho hierárquico desde a raiz até à pasta atual.
     breadcrumbs: list[Folder] = []
     current = folder
     seen: set[int] = set()
@@ -52,6 +58,7 @@ def get_folder_breadcrumbs(db: Session, folder: Folder | None, owner_id: int) ->
 
 
 def create_folder(db: Session, owner_id: int, name: str, parent_id: int | None = None) -> Folder:
+    # Cria uma nova pasta para o utilizador autenticado.
     cleaned_name = name.strip()
 
     existing_query = db.query(Folder).filter(Folder.owner_id == owner_id, Folder.name == cleaned_name)
@@ -71,12 +78,14 @@ def create_folder(db: Session, owner_id: int, name: str, parent_id: int | None =
 
 
 def folder_has_children(db: Session, owner_id: int, folder_id: int) -> bool:
+    # Verifica se uma pasta contém ficheiros ou subpastas.
     has_files = db.query(File.id).filter(File.owner_id == owner_id, File.folder_id == folder_id).first() is not None
     has_folders = db.query(Folder.id).filter(Folder.owner_id == owner_id, Folder.parent_id == folder_id).first() is not None
     return has_files or has_folders
 
 
 def delete_folder(db: Session, owner_id: int, folder_id: int) -> Folder | None:
+    # Elimina uma pasta vazia pertencente ao utilizador autenticado.
     folder = get_folder_by_id_and_owner(db, folder_id, owner_id)
     if not folder:
         return None
@@ -85,9 +94,11 @@ def delete_folder(db: Session, owner_id: int, folder_id: int) -> Folder | None:
     return folder
 
 def get_file_by_id_and_owner(db: Session, file_id: int, owner_id: int) -> File | None:
+    # Descreve a lógica associada a get_file_by_id_and_owner.
     return db.query(File).filter(File.id == file_id, File.owner_id == owner_id).first()
 
 def move_file_to_folder(db: Session, file_id: int, owner_id: int, folder_id: int | None) -> File | None:
+    # Altera a pasta associada a um ficheiro do utilizador.
     db_file = get_file_by_id_and_owner(db, file_id, owner_id)
     if not db_file:
         return None
@@ -102,6 +113,7 @@ def move_file_to_folder(db: Session, file_id: int, owner_id: int, folder_id: int
 
 
 def toggle_favorite(db: Session, file_id: int, owner_id: int) -> File | None:
+    # Alterna o estado de favorito de um ficheiro do utilizador.
     db_file = get_file_by_id_and_owner(db, file_id, owner_id)
     if not db_file:
         return None
@@ -111,6 +123,7 @@ def toggle_favorite(db: Session, file_id: int, owner_id: int) -> File | None:
     return db_file
 
 def delete_file(db: Session, file_id: int, owner_id: int) -> File | None:
+    # Apaga um ficheiro, remove as suas partes no MinIO e tenta apagar a chave no keyserver.
     db_file = get_file_by_id_and_owner(db, file_id, owner_id)
     if not db_file:
         return None
@@ -125,12 +138,15 @@ def delete_file(db: Session, file_id: int, owner_id: int) -> File | None:
     return db_file
 
 def get_user_by_email(db: Session, email: str) -> User | None:
+    # Descreve a lógica associada a get_user_by_email.
     return db.query(User).filter(User.email == email).first()
 
 def get_user_by_id(db: Session, user_id: int) -> User | None:
+    # Descreve a lógica associada a get_user_by_id.
     return db.query(User).filter(User.id == user_id).first()
 
 def create_user(db: Session, user_create: UserCreate):
+    # Cria um utilizador e guarda o material criptográfico cifrado.
     hashed_password = hash_password(user_create.password)
 
     db_user = User(
@@ -158,6 +174,7 @@ def create_user(db: Session, user_create: UserCreate):
     return db_user
 
 def set_password_reset_code(db: Session, user: User, code_hash: str, expires_at) -> User:
+    # Guarda o hash do código de recuperação e a respetiva data de expiração.
     user.password_reset_code_hash = code_hash
     user.password_reset_expires_at = expires_at
 
@@ -169,6 +186,7 @@ def set_password_reset_code(db: Session, user: User, code_hash: str, expires_at)
 
 
 def is_password_reset_code_expired(user: User) -> bool:
+    # Verifica se o código de recuperação de password expirou.
     from datetime import datetime, timezone
 
     expires_at = user.password_reset_expires_at
@@ -185,6 +203,7 @@ def is_password_reset_code_expired(user: User) -> bool:
 
 
 def clear_password_reset_code(db: Session, user: User) -> User:
+    # Remove os dados temporários associados ao reset de password.
     user.password_reset_code_hash = None
     user.password_reset_expires_at = None
 
@@ -196,6 +215,7 @@ def clear_password_reset_code(db: Session, user: User) -> User:
 
 
 def reset_user_password_and_keys(db: Session, user: User, reset_data) -> User:
+    # Atualiza password, chaves cifradas e recovery key após recuperação da conta.
     user.password_hash = hash_password(reset_data.new_password)
 
     user.kdf_salt = reset_data.kdf_salt
@@ -220,6 +240,7 @@ def reset_user_password_and_keys(db: Session, user: User, reset_data) -> User:
 
 
 def create_file(db: Session, file_data: File_Create) -> File:
+    # Cria o registo de metadados de um ficheiro já armazenado no MinIO.
     db_file = File(
         filename=file_data.filename,
         owner_id=file_data.owner_id,
@@ -246,6 +267,7 @@ def create_file(db: Session, file_data: File_Create) -> File:
 
 
 def set_mfa_code(db: Session, user: User, code_hash: str, expires_at, challenge_id: str, purpose: str) -> User:
+    # Guarda o hash de um código MFA e os metadados do desafio.
     user.mfa_code_hash = code_hash
     user.mfa_code_expires_at = expires_at
     user.mfa_challenge_id = challenge_id
@@ -258,6 +280,7 @@ def set_mfa_code(db: Session, user: User, code_hash: str, expires_at, challenge_
 
 
 def is_mfa_code_expired(user: User) -> bool:
+    # Verifica se o código MFA expirou.
     from datetime import datetime, timezone
 
     expires_at = user.mfa_code_expires_at
@@ -272,6 +295,7 @@ def is_mfa_code_expired(user: User) -> bool:
 
 
 def clear_mfa_code(db: Session, user: User) -> User:
+    # Remove o código MFA temporário guardado no utilizador.
     user.mfa_code_hash = None
     user.mfa_code_expires_at = None
     user.mfa_challenge_id = None
@@ -284,6 +308,7 @@ def clear_mfa_code(db: Session, user: User) -> User:
 
 
 def set_mfa_enabled(db: Session, user: User, enabled: bool) -> User:
+    # Ativa ou desativa o MFA do utilizador.
     user.mfa_enabled = enabled
     clear_mfa_code(db, user)
     db.refresh(user)
