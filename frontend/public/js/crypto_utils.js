@@ -4,13 +4,19 @@ const KDF_ITERATIONS = 600000;
 
 // Converte bytes para Base64URL para transporte seguro em JSON.
 function arrayBufferToBase64Url(buffer) {
+
+    // Converte o ArrayBuffer numa vista de bytes
     const bytes = new Uint8Array(buffer);
+    // usada para criar uma string binária
     let binary = "";
 
+    // Percorrer cada byte do Uint8Array
     for (const byte of bytes) {
+        // Converte cada byte num carácter e adiciona-o à string binary
         binary += String.fromCharCode(byte);
     }
 
+    // Converte a string criada em base64
     return btoa(binary)
         .replace(/\+/g, "-")
         .replace(/\//g, "_")
@@ -20,23 +26,30 @@ function arrayBufferToBase64Url(buffer) {
 
 // Converte Base64URL de volta para bytes.
 function base64UrlToArrayBuffer(base64url) {
+    // Converte o valor recebido para string 
     let clean = String(base64url)
-        .trim()
-        .replace(/\s+/g, "")
-        .replace(/-/g, "+")
-        .replace(/_/g, "/");
+        .trim() // remove espaços em branco
+        .replace(/\s+/g, "") // remove todos os espaços, quebras de linha ou tabs
+        .replace(/-/g, "+") // converte o - de volta para +
+        .replace(/_/g, "/"); // converte o catacter _ de volta para /
 
+    // Como a função anterior removia o "=", esta adiciona. Age como padding
     while (clean.length % 4 !== 0) {
         clean += "=";
     }
 
+    // Converte o base64 numa string binária
     const binary = atob(clean);
+    // Cria um array de bytes com o mesmo tamamho da string binária
     const bytes = new Uint8Array(binary.length);
 
+    // Percorre cada posição da string binária
     for (let i = 0; i < binary.length; i++) {
+        // Obtém o codigo numerico de cada caracter e guarda-o como byte
         bytes[i] = binary.charCodeAt(i);
     }
 
+    // Devolve o ArrayBuffer
     return bytes.buffer;
 }
 
@@ -60,13 +73,16 @@ function base64ToArrayBuffer(value) {
 // Remove espaços da recovery key introduzida pelo utilizador.
 function normalizeRecoveryKey(recoveryKey) {
     return String(recoveryKey)
+        // remove espaços em branco
         .trim()
+        // remove todos os espaços
         .replace(/\s+/g, "");
 }
 
 
 // Formata a recovery key em blocos para facilitar leitura e cópia.
 function formatRecoveryKeyForDisplay(recoveryKey) {
+    // Agrupar em grupos de 1 a 4 caracteres
     return String(recoveryKey).match(/.{1,4}/g).join(" ");
 }
 
@@ -107,17 +123,19 @@ function recoveryKeyToArrayBuffer(recoveryKey) {
 
 
 // Importa a recovery key como chave AES-GCM.
+// Transormar a recovery key numa chave AES-256 para ser depois utilizada na desencriptação da chave privada do utilizador
 async function importRecoveryAesKey(recoveryKey) {
+    // Converte a recovery key para um ArrayBuffer
     const recoveryKeyBuffer = recoveryKeyToArrayBuffer(recoveryKey);
 
     return await crypto.subtle.importKey(
-        "raw",
-        recoveryKeyBuffer,
+        "raw", //chave em bytes purs
+        recoveryKeyBuffer, //passa os bytes da chave
         {
-            name: "AES-GCM"
-        },
-        false,
-        ["encrypt", "decrypt"]
+            name: "AES-GCM" //algoritmo
+        }, 
+        false, // faz com que a chave não seja exportada novamente (ou seja o browser não poderá extrair os bytes outra vez)
+        ["encrypt", "decrypt"] // usos da chave
     );
 }
 

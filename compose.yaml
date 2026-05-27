@@ -20,8 +20,8 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL:    ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
-    ports:
-      - "5080:80"
+    #ports:
+      #- "5080:80"
     depends_on:
       - db
 

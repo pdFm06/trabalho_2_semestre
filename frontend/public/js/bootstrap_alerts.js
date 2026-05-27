@@ -1,4 +1,5 @@
 // Ficheiro responsável por frontend/public/js/bootstrap_alerts.js.
+// Função responsável por prevenir injeções
 function escapeHTML(value) {
     return String(value)
         .replace(/&/g, "&amp;")
